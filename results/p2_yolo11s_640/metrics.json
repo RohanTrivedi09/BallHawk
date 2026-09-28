@@ -1,0 +1,47 @@
+{
+  "run_name": "p2_yolo11s_640",
+  "notebook": "05",
+  "variable_changed": "detection outputs P3-P5 -> P2-P5",
+  "model": "yolo11s-p2.yaml",
+  "imgsz": 640,
+  "epochs": 100,
+  "batch": 16,
+  "split": "test",
+  "overall": {
+    "mAP50": 0.6806068101155324,
+    "mAP50_95": 0.4383135945135102
+  },
+  "per_class": [
+    {
+      "class": "ball",
+      "precision": 1.0,
+      "recall": 0.0,
+      "mAP50": 0.18277817435296015,
+      "mAP50_95": 0.044576222538964275
+    },
+    {
+      "class": "goalkeeper",
+      "precision": 0.8181763225246417,
+      "recall": 0.7254901960784313,
+      "mAP50": 0.7410432324746722,
+      "mAP50_95": 0.493834716485489
+    },
+    {
+      "class": "player",
+      "precision": 0.9329333530189552,
+      "recall": 0.9464906184850591,
+      "mAP50": 0.9799652170263313,
+      "mAP50_95": 0.7081631869853331
+    },
+    {
+      "class": "referee",
+      "precision": 0.7949039991575421,
+      "recall": 0.7696969696969697,
+      "mAP50": 0.8186406166081658,
+      "mAP50_95": 0.5066802520442544
+    }
+  ],
+  "inference_fps": 43.80225087288335,
+  "train_minutes": 13.49524009625117,
+  "notes": "Custom yolo11-p2.yaml; yolo11s.pt weights transferred where shapes match, new P2 branch and re-indexed head layers start untrained. ultralytics 8.4.163. FPS re-measured in one quiet pass, median of 3 (was 43.7 at end of run)."
+}

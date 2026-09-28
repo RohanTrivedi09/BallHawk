@@ -1,0 +1,47 @@
+{
+  "run_name": "baseline_yolo11s_640_seed1",
+  "notebook": "02b",
+  "variable_changed": "seed 0 -> 1",
+  "model": "yolo11s.pt",
+  "imgsz": 640,
+  "epochs": 100,
+  "batch": 16,
+  "split": "test",
+  "overall": {
+    "mAP50": 0.7492816743311792,
+    "mAP50_95": 0.5014672020015679
+  },
+  "per_class": [
+    {
+      "class": "ball",
+      "precision": 0.8642654162735139,
+      "recall": 0.29310344827586204,
+      "mAP50": 0.31413007627293343,
+      "mAP50_95": 0.11521378581735726
+    },
+    {
+      "class": "goalkeeper",
+      "precision": 0.6873186764436738,
+      "recall": 0.8823529411764706,
+      "mAP50": 0.8274583102855091,
+      "mAP50_95": 0.5787539410942016
+    },
+    {
+      "class": "player",
+      "precision": 0.9688796621568293,
+      "recall": 0.9430159833217512,
+      "mAP50": 0.977883436413791,
+      "mAP50_95": 0.7318860309093673
+    },
+    {
+      "class": "referee",
+      "precision": 0.9201860110011323,
+      "recall": 0.7454545454545455,
+      "mAP50": 0.877654874352483,
+      "mAP50_95": 0.5800150501853455
+    }
+  ],
+  "inference_fps": 46.99211424134371,
+  "train_minutes": 11.173619449138641,
+  "notes": "Noise-floor check: identical to 02 except seed. ultralytics 8.4.163. FPS re-measured in one quiet pass, median of 3 (was 40.3 at end of run)."
+}

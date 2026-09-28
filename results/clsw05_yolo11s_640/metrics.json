@@ -1,0 +1,47 @@
+{
+  "run_name": "clsw05_yolo11s_640",
+  "notebook": "05b",
+  "variable_changed": "cls_pw 0 -> 0.5",
+  "model": "yolo11s.pt",
+  "imgsz": 640,
+  "epochs": 100,
+  "batch": 16,
+  "split": "test",
+  "overall": {
+    "mAP50": 0.7534293332852253,
+    "mAP50_95": 0.5045821857605208
+  },
+  "per_class": [
+    {
+      "class": "ball",
+      "precision": 0.9025729665251733,
+      "recall": 0.3196607408670065,
+      "mAP50": 0.3608042867142968,
+      "mAP50_95": 0.12688687101012683
+    },
+    {
+      "class": "goalkeeper",
+      "precision": 0.7995917162195658,
+      "recall": 0.8605835956722113,
+      "mAP50": 0.8176132507007797,
+      "mAP50_95": 0.5818711817253357
+    },
+    {
+      "class": "player",
+      "precision": 0.9464659432119866,
+      "recall": 0.9583157994412287,
+      "mAP50": 0.9774973036251602,
+      "mAP50_95": 0.7339949927779512
+    },
+    {
+      "class": "referee",
+      "precision": 0.8457466413959694,
+      "recall": 0.8121212121212121,
+      "mAP50": 0.8578024921006644,
+      "mAP50_95": 0.5755756975286694
+    }
+  ],
+  "inference_fps": 44.43415447065232,
+  "train_minutes": 11.33426497777303,
+  "notes": "Value fixed a priori. Goalkeepers are rarer than balls in train, so they get the largest weight; cls_pw is not ball-specific. ultralytics 8.4.163. FPS re-measured in one quiet pass, median of 3 (was 37.9 at end of run)."
+}

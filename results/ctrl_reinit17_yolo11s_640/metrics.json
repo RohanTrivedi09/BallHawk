@@ -1,0 +1,47 @@
+{
+  "run_name": "ctrl_reinit17_yolo11s_640",
+  "notebook": "05c",
+  "variable_changed": "layers 17-23 re-initialised (control for 05)",
+  "model": "yolo11s.pt, layers 17-23 re-initialised",
+  "imgsz": 640,
+  "epochs": 100,
+  "batch": 16,
+  "split": "test",
+  "overall": {
+    "mAP50": 0.6938237204956943,
+    "mAP50_95": 0.4345437344185655
+  },
+  "per_class": [
+    {
+      "class": "ball",
+      "precision": 0.760223404607222,
+      "recall": 0.2188826122981224,
+      "mAP50": 0.22997784568372803,
+      "mAP50_95": 0.05979738594738595
+    },
+    {
+      "class": "goalkeeper",
+      "precision": 0.7319548426001434,
+      "recall": 0.7843137254901961,
+      "mAP50": 0.7519076425043597,
+      "mAP50_95": 0.5107759536796699
+    },
+    {
+      "class": "player",
+      "precision": 0.9282025324773783,
+      "recall": 0.9523108771314815,
+      "mAP50": 0.9660814833263173,
+      "mAP50_95": 0.6580552909711199
+    },
+    {
+      "class": "referee",
+      "precision": 0.7408308645447869,
+      "recall": 0.7757575757575758,
+      "mAP50": 0.8273279104683724,
+      "mAP50_95": 0.5095463070760865
+    }
+  ],
+  "inference_fps": 48.579248759498604,
+  "train_minutes": 11.44273134469986,
+  "notes": "Control for 05: same architecture as 02, same layers lost as in 05. ultralytics 8.4.163."
+}

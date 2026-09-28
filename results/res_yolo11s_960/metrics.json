@@ -1,0 +1,47 @@
+{
+  "run_name": "res_yolo11s_960",
+  "notebook": "03",
+  "variable_changed": "imgsz 640 -> 960",
+  "model": "yolo11s.pt",
+  "imgsz": 960,
+  "epochs": 100,
+  "batch": 16,
+  "split": "test",
+  "overall": {
+    "mAP50": 0.8250960741389105,
+    "mAP50_95": 0.595523381550682
+  },
+  "per_class": [
+    {
+      "class": "ball",
+      "precision": 0.9543375617676136,
+      "recall": 0.5,
+      "mAP50": 0.5316519607843138,
+      "mAP50_95": 0.2423882998875825
+    },
+    {
+      "class": "goalkeeper",
+      "precision": 0.7540706017319978,
+      "recall": 0.8235294117647058,
+      "mAP50": 0.8561139220650319,
+      "mAP50_95": 0.6618846957674254
+    },
+    {
+      "class": "player",
+      "precision": 0.9681407365876576,
+      "recall": 0.970813064628214,
+      "mAP50": 0.9884675431474996,
+      "mAP50_95": 0.8111239106058743
+    },
+    {
+      "class": "referee",
+      "precision": 0.8993070859256991,
+      "recall": 0.9212121212121213,
+      "mAP50": 0.9241508705587972,
+      "mAP50_95": 0.6666966199418456
+    }
+  ],
+  "inference_fps": 43.035735249542235,
+  "train_minutes": 18.69903508424759,
+  "notes": "ultralytics 8.4.163. FPS re-measured in one quiet pass, median of 3 (was 39.3 at end of run)."
+}

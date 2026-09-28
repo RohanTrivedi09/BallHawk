@@ -1,0 +1,47 @@
+{
+  "run_name": "aug_scale02_mblur_yolo11s_640",
+  "notebook": "04b",
+  "variable_changed": "added MotionBlur(blur_limit 3-7, p 0.3) on top of 04a",
+  "model": "yolo11s.pt",
+  "imgsz": 640,
+  "epochs": 100,
+  "batch": 16,
+  "split": "test",
+  "overall": {
+    "mAP50": 0.729358418858034,
+    "mAP50_95": 0.47465648855386655
+  },
+  "per_class": [
+    {
+      "class": "ball",
+      "precision": 0.8615352245242565,
+      "recall": 0.3220073202885429,
+      "mAP50": 0.33048829061405127,
+      "mAP50_95": 0.12674247847451647
+    },
+    {
+      "class": "goalkeeper",
+      "precision": 0.6554309001913361,
+      "recall": 0.8627450980392157,
+      "mAP50": 0.7438753398804683,
+      "mAP50_95": 0.510970388535551
+    },
+    {
+      "class": "player",
+      "precision": 0.9645683121462507,
+      "recall": 0.9459112505206951,
+      "mAP50": 0.9755226265302026,
+      "mAP50_95": 0.7059289137132849
+    },
+    {
+      "class": "referee",
+      "precision": 0.8713276053886859,
+      "recall": 0.806060606060606,
+      "mAP50": 0.8675474184074136,
+      "mAP50_95": 0.5549841734921139
+    }
+  ],
+  "inference_fps": 43.77508824164658,
+  "train_minutes": 11.084488463401794,
+  "notes": "Compare against 04a. Default albumentations kept. ultralytics 8.4.163. FPS re-measured in one quiet pass, median of 3 (was 47.1 at end of run)."
+}
