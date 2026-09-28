@@ -25,11 +25,14 @@ Full plan, decisions and every result: [`ballhawk-project-plan.md`](ballhawk-pro
 - `demo/` — Gradio live demo (Frame and Clip tabs); `site/` — project website
 - `results/` — metrics, report figures and stats for every run
 
-## Live demo
+## Website and live demo
+One server runs both: the project website at `/` (with the demo embedded) and the Gradio demo at `/demo`.
 ```
+python3 site/build.py
 cd demo && uv run --python 3.12 --with ultralytics==8.4.163 --with opencv-python-headless --with scikit-learn \
     --with "gradio>=5" --with imageio-ffmpeg --with lap python app.py
 ```
+Then open http://127.0.0.1:7860.
 
 ## Data and credits
 Player detection: `martinjolif/football-player-detection` (Roboflow football-players-detection, CC BY 4.0).

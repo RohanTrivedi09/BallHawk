@@ -137,5 +137,29 @@ demo = gr.TabbedInterface(
     title="BallHawk: tactical view and offside visualiser",
 )
 
+
+
+def web_app():
+    """One server for the whole project: the website at /, its media at /media, the Gradio demo at /demo.
+    The site is read from ../site (repository layout) or ./site (a copy next to app.py, e.g. on a Space)."""
+    from fastapi import FastAPI
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    site = next((d for d in (HERE.parent / "site", HERE / "site") if (d / "index_web.html").exists()), None)
+    if site is None:
+        raise FileNotFoundError("site/index_web.html not found: run `python3 site/build.py` first")
+    app = FastAPI(title="BallHawk")
+    app.mount("/media", StaticFiles(directory=site / "media"), name="media")
+
+    @app.get("/", include_in_schema=False)
+    def index():
+        return FileResponse(site / "index_web.html")
+
+    return gr.mount_gradio_app(app, demo, path="/demo")
+
+
 if __name__ == "__main__":
-    demo.launch()
+    import uvicorn
+
+    uvicorn.run(web_app(), host="0.0.0.0", port=7860)

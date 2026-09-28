@@ -47,9 +47,29 @@ fill = {**{k: str(v) for k, v in ball_crop_geometry().items()},
         "gallery": data_uri(SITE / "assets/gallery.jpg", "image/jpeg"),
         "offside": data_uri(SITE / "assets/offside_tile.jpg", "image/jpeg"),
         "tactical_v2_poster": data_uri(SITE / "assets/tactical_v2_poster.jpg", "image/jpeg")}
-html = (SITE / "src.html").read_text()
-for k, v in fill.items():
-    html = html.replace("{{" + k + "}}", v)
-assert "{{" not in html, "unfilled placeholder"
-(SITE / "index.html").write_text(html)
-print(f"site/index.html {len(html) / 1024:.0f} KB", {k: fill[k] for k in ("crop_x0", "crop_y0", "ball_w")})
+LIVE_NAV = '<a href="#live">Live demo</a>'
+LIVE_SECTION = """<section id="live">
+    <header>
+      <span class="phase">Live demo</span>
+      <h2>Try it on your own footage</h2>
+    </header>
+    <p class="col">Upload a wide broadcast frame or a short clip. Frames come back in a few seconds; clips are tracked, calibrated and drawn frame by frame, about a second per processed frame. Wide, high camera angles work best; close-ups and replays will not calibrate. <a href="demo/" target="_blank" rel="noopener">Open the demo on its own page</a>.</p>
+    <iframe class="live-frame" src="demo/" title="BallHawk live demo: tactical view and offside visualiser" loading="lazy"></iframe>
+  </section>"""
+
+
+def render(live):
+    html = (SITE / "src.html").read_text()
+    extra = {"live_nav": LIVE_NAV if live else "", "live_section": LIVE_SECTION if live else ""}
+    for k, v in {**fill, **extra}.items():
+        html = html.replace("{{" + k + "}}", v)
+    assert "{{" not in html, "unfilled placeholder"
+    return html
+
+
+# index.html: the static page (claude.ai artifact). index_web.html: the same page with the live demo
+# embedded, served by demo/app.py next to the Gradio app.
+for name, live in (("index.html", False), ("index_web.html", True)):
+    html = render(live)
+    (SITE / name).write_text(html)
+    print(f"site/{name} {len(html) / 1024:.0f} KB")
