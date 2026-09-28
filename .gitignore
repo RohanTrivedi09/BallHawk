@@ -1,0 +1,20 @@
+# Python / OS
+__pycache__/
+*.pyc
+.DS_Store
+
+# Downloaded or regenerable data (rebuilt by make_splits.py / ballhawk_common.build_dataset / fetch_clip)
+frames/
+video/
+logs/
+
+# Large training outputs: experiment weights, rendered videos, Kaggle working copies
+results/**/*.pt
+results/**/*.mp4
+results/kaggle_*/**/code/
+results/kaggle_*/**/runs/
+results/kaggle_*/*.log
+
+# Built artefacts (python3 site/build.py regenerates it)
+site/index.html
+kaggle/*/run.py
