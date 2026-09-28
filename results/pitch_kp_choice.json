@@ -1,0 +1,23 @@
+{
+  "chosen": "pitch_kp_yolo11s",
+  "weights": "/content/results/pitch_kp_yolo11s/best.pt",
+  "imgsz": 960,
+  "calibrated": 1.0,
+  "median_reproj_m": 2.655143356245809,
+  "kp_conf": 0.5,
+  "split": "val",
+  "all": {
+    "pitch_kp_yolo11s": {
+      "weights": "/content/results/pitch_kp_yolo11s/best.pt",
+      "imgsz": 960,
+      "calibrated": 1.0,
+      "median_reproj_m": 2.655143356245809
+    },
+    "pitch_kp_yolo11s_1280": {
+      "weights": "/content/results/pitch_kp_yolo11s_1280/best.pt",
+      "imgsz": 1280,
+      "calibrated": 0.9814814814814815,
+      "median_reproj_m": 3.731131009253237
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "frames": 16,
+  "evaluated": 16,
+  "kp_conf_chosen_on_val": 0.5,
+  "median_line_error_m": 1.168018800123651,
+  "p90_line_error_m": 3.909792340442249,
+  "median_player_pos_error_m": 2.107114629318616,
+  "frames_with_a_flag_decision_changed": 1,
+  "statuses": {
+    "ok": 16
+  },
+  "legend": "white = reference (labelled keypoints), blue = automatic; minimap: filled = reference position, ring = automatic"
+}

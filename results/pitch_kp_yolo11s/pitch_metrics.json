@@ -1,0 +1,29 @@
+{
+  "model": "yolo11s-pose.pt",
+  "imgsz": 960,
+  "epochs": 150,
+  "batch": 16,
+  "train_minutes": 26.7024666706721,
+  "kp_conf": 0.5,
+  "split": "test",
+  "pose_mAP50": 0.8500971518631093,
+  "pose_mAP50_95": 0.2920163389629864,
+  "box_mAP50": 0.995,
+  "calibration_success": 1.0,
+  "median_kp_px_err": 27.81520483031879,
+  "median_reproj_m": 2.80426782773454,
+  "p90_reproj_m": 4.663764961889661,
+  "video_clip": "/content/video/france_2018.mp4",
+  "video": {
+    "frames": 508,
+    "calibration_success": 0.9665354330708661,
+    "probe_image_xy": [
+      990.8954467773438,
+      827.1676025390625
+    ],
+    "jitter_raw_m": 4.232896022070998,
+    "jitter_ema_m": 1.2638635373860512,
+    "ema_weight": 0.3
+  },
+  "notes": "Pitch split by video (splits_pitch.json), Phase 3 click-frame videos forced into test. Real-world coordinates: official dimensions, 105 x 68 m assumed; keypoints 10/11/18/19 are penalty-arc x box-front intersections (roboflow/sports mislabels them as goal-area y). ultralytics 8.4.163."
+}

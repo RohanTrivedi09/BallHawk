@@ -1,0 +1,14 @@
+{
+  "frames": 508,
+  "calibrated_share": 0.9665354330708661,
+  "line_drawn_share": 0.9173228346456693,
+  "median_line_step_m": 1.9000332438111975,
+  "share_steps_over_1m": 0.6022471910112359,
+  "defending_goal_x": 0.0,
+  "defending_team": 1,
+  "team_agreement": 0.9732007335595795,
+  "clip": "\"Match de football France-Allemagne - 16 octobre 2018 - Phase de jeu (1)\" by Like tears in rain, Wikimedia Commons, CC BY-SA 4.0",
+  "detector": "/content/results/res_yolo11s_1280/best.pt",
+  "keypoints": "/content/results/pitch_kp_yolo11s/best.pt",
+  "ema": 0.3
+}

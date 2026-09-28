@@ -1,0 +1,57 @@
+{
+  "frames": 50,
+  "evaluated": 20,
+  "source": "human keypoint annotations (pitch test split) in place of hand clicks",
+  "held_out_median_m": 0.39204928531966654,
+  "held_out_p90_m": 0.6904965788843649,
+  "held_out_median_px": 3.6698854584744685,
+  "size_dependent_median_m": 0.8183065837802421,
+  "goal_area_width_median_abs_error_cm": 13.444455529503507,
+  "goal_area_width_frames": 20,
+  "line_shift_cm_per_px_median": {
+    "16.5 m from goal": 9.809137461256544,
+    "30 m from goal": 11.76091619483546
+  },
+  "curve": {
+    "16.5m_1px": {
+      "mean_cm": 9.7,
+      "p95_cm": 17.0
+    },
+    "16.5m_2px": {
+      "mean_cm": 19.5,
+      "p95_cm": 33.0
+    },
+    "16.5m_3px": {
+      "mean_cm": 28.2,
+      "p95_cm": 50.9
+    },
+    "16.5m_4px": {
+      "mean_cm": 40.3,
+      "p95_cm": 66.8
+    },
+    "16.5m_5px": {
+      "mean_cm": 49.4,
+      "p95_cm": 83.4
+    },
+    "30m_1px": {
+      "mean_cm": 11.6,
+      "p95_cm": 23.5
+    },
+    "30m_2px": {
+      "mean_cm": 23.7,
+      "p95_cm": 49.2
+    },
+    "30m_3px": {
+      "mean_cm": 34.4,
+      "p95_cm": 73.6
+    },
+    "30m_4px": {
+      "mean_cm": 46.4,
+      "p95_cm": 95.7
+    },
+    "30m_5px": {
+      "mean_cm": 61.5,
+      "p95_cm": 119.9
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "frames": 750,
+  "calibrated_share": 1.0,
+  "line_drawn_share": 0.9986666666666667,
+  "median_line_step_m": 0.0850204262941805,
+  "share_steps_over_1m": 0.11780455153949129,
+  "defending_goal_x": 0.0,
+  "defending_team": 1,
+  "team_agreement": 0.9727531395812755,
+  "clip": "DFL Deutsche Fussball Liga, Bundesliga Data Shootout clip 121364_9 (via HF dbal0503/Bundesliga). Licence of the original competition data unverified: metrics and stills only, do not publish the video.",
+  "detector": "/content/results/res_yolo11s_1280/best.pt",
+  "keypoints": "/content/results/pitch_kp_yolo11s/best.pt",
+  "ema": 0.3
+}
