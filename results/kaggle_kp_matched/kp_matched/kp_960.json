@@ -1,0 +1,20 @@
+{
+  "imgsz": 960,
+  "batch": 4,
+  "epochs": 150,
+  "train_minutes": 29.63457914193471,
+  "pose_mAP50": 0.6962385186069969,
+  "pose_mAP50_95": 0.22145441495773338,
+  "val": {
+    "calibrated": 1.0,
+    "median_reproj_m": 4.028338019297327,
+    "p90_reproj_m": 30.338891149094767,
+    "median_kp_px_err": 35.33870506837951
+  },
+  "test": {
+    "calibrated": 0.98,
+    "median_reproj_m": 3.1815366964873593,
+    "p90_reproj_m": 10.056482257394686,
+    "median_kp_px_err": 33.54403161979474
+  }
+}
