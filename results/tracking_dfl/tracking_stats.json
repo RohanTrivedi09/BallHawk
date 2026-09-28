@@ -1,0 +1,38 @@
+{
+  "clip": "DFL Deutsche Fussball Liga, Bundesliga Data Shootout clip 121364_9 (via HF dbal0503/Bundesliga). Licence of the original competition data unverified: metrics and stills only, do not publish the video.",
+  "render_tracker": "bytetrack.yaml",
+  "fps": 25.0,
+  "per_detector_tracker": {
+    "02 baseline (640) | bytetrack.yaml": {
+      "frames": 750,
+      "player_track_ids": 101,
+      "player_ids_per_minute": 202.0,
+      "median_player_track_frames": 17.0,
+      "ball_track_continuity": 0.09866666666666667
+    },
+    "02 baseline (640) | botsort.yaml": {
+      "frames": 750,
+      "player_track_ids": 96,
+      "player_ids_per_minute": 192.0,
+      "median_player_track_frames": 27.5,
+      "ball_track_continuity": 0.056
+    },
+    "03 imgsz 1280 | bytetrack.yaml": {
+      "frames": 750,
+      "player_track_ids": 130,
+      "player_ids_per_minute": 260.0,
+      "median_player_track_frames": 4.0,
+      "ball_track_continuity": 0.252
+    },
+    "03 imgsz 1280 | botsort.yaml": {
+      "frames": 750,
+      "player_track_ids": 129,
+      "player_ids_per_minute": 258.0,
+      "median_player_track_frames": 4.0,
+      "ball_track_continuity": 0.17066666666666666
+    }
+  },
+  "render_with": "03 imgsz 1280",
+  "team_agreement": 0.9727531395812755,
+  "player_tracks_assigned": 130
+}
