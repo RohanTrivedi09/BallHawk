@@ -1,0 +1,29 @@
+{
+  "repo": "martinjolif/football-player-detection",
+  "revision": "e8b8cea002692efd74c945fcdad63e729adc5671",
+  "seed": 0,
+  "force_test": [],
+  "videos": {
+    "train": [
+      "08fd33",
+      "2e57b9",
+      "40cd38",
+      "42ba34",
+      "538438",
+      "54745b",
+      "55c9d1",
+      "a9f16c",
+      "c01561",
+      "cd987c"
+    ],
+    "val": [
+      "4b770a",
+      "798b45"
+    ],
+    "test": [
+      "121364",
+      "573e61",
+      "744b27"
+    ]
+  }
+}

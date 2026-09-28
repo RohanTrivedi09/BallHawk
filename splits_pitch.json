@@ -1,0 +1,35 @@
+{
+  "repo": "martinjolif/football-pitch-detection",
+  "revision": "73488ede6158cbfe05aa7a8e471fc5041eceba8b",
+  "seed": 0,
+  "force_test": [
+    "121364",
+    "744b27"
+  ],
+  "videos": {
+    "train": [
+      "08fd33",
+      "2e57b9",
+      "42ba34",
+      "538438",
+      "54745b",
+      "55c9d1",
+      "c01561",
+      "cd987c",
+      "d82e7a",
+      "ec783a"
+    ],
+    "val": [
+      "0a2d9b",
+      "0bfacc",
+      "4b770a",
+      "798b45",
+      "a9f16c",
+      "e624c9"
+    ],
+    "test": [
+      "121364",
+      "744b27"
+    ]
+  }
+}
