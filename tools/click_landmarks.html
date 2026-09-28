@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Landmark Clicker</title>
+<style>
+  :root { --bg:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --line:#e4e3df; --accent:#2a78d6; --mark:#e34948; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --line:#3a3936; --accent:#3987e5; --mark:#e66767; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  h1 { font-size: 16px; margin: 0 12px 0 0; }
+  select, button { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  main { display: grid; grid-template-columns: 1fr 300px; gap: 16px; padding: 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  #wrap { position: relative; overflow: auto; border: 1px solid var(--line); }
+  canvas#img { display: block; width: 100%; cursor: crosshair; }
+  canvas#loupe { position: fixed; pointer-events: none; width: 180px; height: 180px; border: 2px solid var(--accent); border-radius: 50%; display: none; }
+  ol { padding-left: 20px; margin: 8px 0; }
+  li { padding: 3px 4px; border-radius: 4px; cursor: pointer; color: var(--ink2); }
+  li.done { color: var(--ink); }
+  li.done::after { content: " ✓"; }
+  li.active { background: var(--accent); color: #fff; }
+  .help { color: var(--ink2); font-size: 13px; }
+  kbd { border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pitch landmark clicker</h1>
+  <label>Frame <select id="frame"></select></label>
+  <button id="skip">Skip landmark (<kbd>S</kbd>)</button>
+  <button id="undo">Clear selected (<kbd>Backspace</kbd>)</button>
+  <button id="export" class="primary">Download clicks.json</button>
+</header>
+<main>
+  <div id="wrap"><canvas id="img"></canvas></div>
+  <aside>
+    <p class="help">Pick a landmark on the right (the next one is selected automatically), then click it on the image. The loupe magnifies 6×: aim at the <b>centre of the painted line intersection</b>. Skip any landmark that is not visible or is hidden by a player. Clicks are kept in this browser until you download them.</p>
+    <ol id="list"></ol>
+  </aside>
+</main>
+<canvas id="loupe" width="180" height="180"></canvas>
+<script>
+// Only real painted intersections of the LEFT penalty area plus halfway line / centre circle.
+// Indices are ballhawk_pitch.KEYPOINTS indices (0-based).
+const LANDMARKS = [
+  [1, "Goal line × penalty box (far side)"], [2, "Goal line × goal area (far side)"],
+  [3, "Goal line × goal area (near side)"], [4, "Goal line × penalty box (near side)"],
+  [6, "Goal area front corner (far side)"], [7, "Goal area front corner (near side)"],
+  [9, "Penalty box front corner (far side)"], [12, "Penalty box front corner (near side)"],
+  [8, "Penalty spot (centre)"],
+  [13, "Halfway line × far touchline"], [14, "Halfway line × centre circle (far)"],
+  [15, "Halfway line × centre circle (near)"], [16, "Halfway line × near touchline"],
+];
+const FRAMES = ["test11_121364_9_8_png.jpg", "test49_744b27_3_5_png.jpg", "test64_744b27_7_4_png.jpg"];
+const KEY = "ballhawk-clicks-v1";
+let clicks = {}; try { clicks = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(clicks)); } catch (e) {} };
+
+const cv = document.getElementById("img"), ctx = cv.getContext("2d");
+const loupe = document.getElementById("loupe"), lctx = loupe.getContext("2d");
+const sel = document.getElementById("frame"), list = document.getElementById("list");
+let image = new Image(), frame = FRAMES[0], active = 0;
+FRAMES.forEach(f => sel.add(new Option(f, f)));
+
+function frameClicks() { return clicks[frame] ||= {}; }
+function draw() {
+  ctx.drawImage(image, 0, 0);
+  const s = image.naturalWidth / 960;
+  for (const [idx, [x, y]] of Object.entries(frameClicks())) {
+    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue("--mark"); ctx.lineWidth = 2 * s;
+    ctx.beginPath(); ctx.moveTo(x - 8 * s, y); ctx.lineTo(x + 8 * s, y); ctx.moveTo(x, y - 8 * s); ctx.lineTo(x, y + 8 * s); ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.font = `${11 * s}px system-ui`; ctx.fillText(idx, x + 6 * s, y - 6 * s);
+  }
+  list.innerHTML = "";
+  LANDMARKS.forEach(([idx, name], i) => {
+    const li = document.createElement("li"); li.textContent = name;
+    if (frameClicks()[idx]) li.classList.add("done");
+    if (i === active) li.classList.add("active");
+    li.onclick = () => { active = i; draw(); };
+    list.appendChild(li);
+  });
+}
+function nextOpen() {
+  for (let k = 1; k <= LANDMARKS.length; k++) {
+    const i = (active + k) % LANDMARKS.length;
+    if (!frameClicks()[LANDMARKS[i][0]]) { active = i; return; }
+  }
+}
+function load() {
+  frame = sel.value; active = 0;
+  image = new Image();
+  image.onload = () => { cv.width = image.naturalWidth; cv.height = image.naturalHeight; draw(); };
+  image.src = "../frames/click/" + frame;
+}
+function toImage(e) {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height];
+}
+cv.addEventListener("click", e => {
+  const [x, y] = toImage(e);
+  frameClicks()[LANDMARKS[active][0]] = [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+  save(); nextOpen(); draw();
+});
+cv.addEventListener("mousemove", e => {
+  const [x, y] = toImage(e), z = 6, half = 90 / z;
+  loupe.style.display = "block"; loupe.style.left = (e.clientX + 24) + "px"; loupe.style.top = (e.clientY - 200) + "px";
+  lctx.imageSmoothingEnabled = false;
+  lctx.drawImage(cv, x - half, y - half, 2 * half, 2 * half, 0, 0, 180, 180);
+  lctx.strokeStyle = "#e34948"; lctx.beginPath(); lctx.moveTo(90, 70); lctx.lineTo(90, 110); lctx.moveTo(70, 90); lctx.lineTo(110, 90); lctx.stroke();
+});
+cv.addEventListener("mouseleave", () => loupe.style.display = "none");
+document.getElementById("skip").onclick = () => { nextOpen(); draw(); };
+document.getElementById("undo").onclick = () => { delete frameClicks()[LANDMARKS[active][0]]; save(); draw(); };
+document.addEventListener("keydown", e => {
+  if (e.key === "s" || e.key === "S") { nextOpen(); draw(); }
+  if (e.key === "Backspace") { e.preventDefault(); delete frameClicks()[LANDMARKS[active][0]]; save(); draw(); }
+});
+document.getElementById("export").onclick = () => {
+  const blob = new Blob([JSON.stringify({ image_size: [1920, 1080], keypoint_index: "ballhawk_pitch.KEYPOINTS", clicks }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "clicks.json"; a.click();
+};
+sel.onchange = load; load();
+</script>
+</body>
+</html>
