@@ -1,0 +1,22 @@
+{
+  "clip": "DFL Deutsche Fussball Liga, Bundesliga Data Shootout clip 121364_9 (via HF dbal0503/Bundesliga).",
+  "frames": 750,
+  "fps": 25.0,
+  "team_agreement": 0.9704947603468659,
+  "calibrated_share": 1.0,
+  "defending_goal_x": 0.0,
+  "defending_team": 0,
+  "possession_share": {
+    "A": 0.18518518518518517,
+    "B": 0.8148148148148148
+  },
+  "possession_frames": 54,
+  "top_distance_m": {
+    "#10": 83.8,
+    "#20": 79.8,
+    "#16": 76.5,
+    "#17": 74.9,
+    "#4": 73.8
+  },
+  "median_line_step_m": 0.06930119018031355
+}
