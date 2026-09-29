@@ -1,6 +1,8 @@
 ultralytics==8.4.163
 opencv-python-headless
 scikit-learn
-gradio>=5
 imageio-ffmpeg
 lap
+fastapi
+uvicorn
+python-multipart
