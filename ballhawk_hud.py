@@ -71,8 +71,49 @@ def _hull(img, pts, colour, alpha=0.18):
     return img
 
 
-def pitch_panel(state, roles, teams, ball_xy, line_x, size=(600, 744)):
-    """Right-hand panel: top distance, dark striped 2D pitch with hulls, IDs, speeds, ball and offside line, legend."""
+# Space control: the pitch as 1 m cells (row-major, 68 rows x 105 columns), each owned by the team of
+# its nearest player (a Voronoi split). Only cells the camera sees count, so the unseen half of the
+# pitch is not handed to whichever player happens to stand nearest to it.
+CELL_XY = np.stack(np.meshgrid(np.arange(bp.LENGTH) + 0.5, np.arange(bp.WIDTH) + 0.5), -1).reshape(-1, 2)
+
+
+def visible_cells(H, frame_shape):
+    """Cells whose centre maps back inside the frame (and in front of the camera). H is image -> pitch."""
+    h, w = frame_shape[:2]
+    Hi = np.linalg.inv(H)
+    uvw = np.c_[CELL_XY, np.ones(len(CELL_XY))] @ Hi.T
+    # The sign of w for points in front of the camera: take it from a pitch point the frame surely shows.
+    front = np.sign((Hi @ np.r_[bp.project(H, [[w / 2, h - 1]])[0], 1.0])[2])
+    ok = uvw[:, 2] * front > 1e-9
+    u, v = uvw[:, 0] / np.where(ok, uvw[:, 2], 1), uvw[:, 1] / np.where(ok, uvw[:, 2], 1)
+    return ok & (u >= 0) & (u < w) & (v >= 0) & (v < h)
+
+
+def control_map(pos, teams, visible=None):
+    """Owner team (0/1) of every cell, -1 where not visible. pos: {id: (x, y)} of outfield players with a team.
+    None when either team has no player on the map."""
+    ids = [i for i in pos if i in teams]
+    if len({teams[i] for i in ids}) < 2:
+        return None
+    P, t = np.array([pos[i] for i in ids]), np.array([teams[i] for i in ids])
+    d = ((CELL_XY[:, None, :] - P[None]) ** 2).sum(-1)
+    owner = t[d.argmin(1)].astype(np.int8)
+    if visible is not None:
+        owner[~visible] = -1
+    return owner
+
+
+def space_share(owner):
+    """(team A share, team B share) of the owned cells, or None."""
+    if owner is None or not (owner >= 0).any():
+        return None
+    a = float((owner == 0).sum() / (owner >= 0).sum())
+    return a, 1 - a
+
+
+def pitch_panel(state, roles, teams, ball_xy, line_x, size=(600, 744), control=None):
+    """Right-hand panel: top distance, dark striped 2D pitch with space control, hulls, IDs, speeds, ball and
+    offside line, legend."""
     W, H = size
     panel = np.full((H, W, 3), PANEL, np.uint8)
     scale = int((W - 30) / (bp.LENGTH + 8))  # integer px per metre (minimap line widths need ints)
@@ -83,6 +124,17 @@ def pitch_panel(state, roles, teams, ball_xy, line_x, size=(600, 744)):
         x0, x1 = to_px(k * bp.LENGTH / 12, 0)[0], to_px((k + 1) * bp.LENGTH / 12, 0)[0]
         band = np.zeros_like(grass); band[:, x0:x1] = True
         mm[grass & band] = (40, 66, 46)
+    share = space_share(control)
+    if share is not None:  # tint each visible cell with its owner's colour, under everything else
+        (x0, y0), (x1, y1) = to_px(0, 0), to_px(bp.LENGTH, bp.WIDTH)
+        cells = control.reshape(int(bp.WIDTH), int(bp.LENGTH))
+        tint = np.zeros((*cells.shape, 3), np.uint8)
+        for t in (0, 1):
+            tint[cells == t] = TEAM[t]
+        tint = cv2.resize(tint, (x1 - x0, y1 - y0), interpolation=cv2.INTER_NEAREST)
+        seen = cv2.resize((cells >= 0).astype(np.uint8), (x1 - x0, y1 - y0), interpolation=cv2.INTER_NEAREST).astype(bool)
+        region = mm[y0:y1, x0:x1]
+        region[seen] = (0.3 * tint[seen] + 0.7 * region[seen]).astype(np.uint8)
     for t in (0, 1):
         pts = [to_px(*state.pos[i]) for i, r in roles.items() if r == "player" and teams.get(i) == t and i in state.pos]
         mm = _hull(mm, pts, TEAM[t], 0.22)
@@ -105,6 +157,9 @@ def pitch_panel(state, roles, teams, ball_xy, line_x, size=(600, 744)):
     y0 = (H - mh) // 2 + 20
     panel[y0:y0 + mh, 20:20 + mm.shape[1]] = mm
     _label(panel, "TACTICAL 2D PITCH MAP (105 m x 68 m)", (20, y0 - 12), INK, 0.5)
+    if share is not None:
+        _label(panel, f"SPACE A {100 * share[0]:.0f}%", (W - 200, y0 - 12), TEAM[0], 0.45)
+        _label(panel, f"B {100 * share[1]:.0f}%", (W - 82, y0 - 12), TEAM[1], 0.45)
     # Top distance
     top = [(i, d) for i, d in state.dist.most_common() if roles.get(i) == "player" and d > 0][:3]
     if top:  # distance needs video; a single frame has none to show

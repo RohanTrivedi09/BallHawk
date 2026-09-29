@@ -17,6 +17,13 @@ import ballhawk_video as bv
 
 EMA, POSSESSION_M = 0.3, 3.0
 MAX_JUMP_M, ACCEPT_AFTER = 3.0, 5  # calibration outlier rejection (see pass 2)
+# Ball gaps: bridge up to half a second; the ball may move up to 3 % of the frame width per frame at 25 fps
+# (about 60 px at 1920, faster than a hard shot seen by a wide camera).
+BALL_GAP_S, BALL_STEP = 0.5, 0.03
+# Team shape: each outfield track's mean position over the clip (smooths the ~2.8 m calibration noise),
+# from tracks seen for at least SHAPE_MIN_S, longest first, at most 10 per team.
+SHAPE_MIN_S, MIN_SHAPE_PLAYERS = 1.0, 6
+SHAPE_MIN_CLIP_S = 8.0  # shorter clips give averages too noisy to read lines from
 
 
 def trim(video, out_mp4, max_seconds=None, stride=1):
@@ -61,11 +68,14 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
     progress(0.05, "Tracking players and the ball")
     dets = bv.track(str(det), video, tracker="bytetrack.yaml", imgsz=1280)
     teams, agreement = bv.assign_teams(video, dets, PLAYER)
-    votes = collections.defaultdict(collections.Counter)  # one role per track: majority class over its frames
-    for d in dets:
-        for c, i in zip(d["cls"], d["id"]):
-            votes[int(i)][ROLE[int(c)]] += 1
-    role = {i: v.most_common(1)[0][0] for i, v in votes.items()}
+    role = bv.track_roles(dets, ROLE)
+    # The ball: best ball box per frame, false jumps dropped and gaps up to BALL_GAP_S bridged.
+    best = bv.best_ball_boxes(dets, role)
+    cap = cv2.VideoCapture(str(video))
+    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    cap.release()
+    ball_boxes, ball_filled = bv.fill_ball_track(best, max_gap=int(round(BALL_GAP_S * fps)),
+                                                 max_step=BALL_STEP * width * 25 / fps)
 
     # Pass 2: smoothed homography per frame; defending side decided once per clip (as in notebook 13).
     progress(0.45, "Calibrating the pitch")
@@ -73,6 +83,7 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
     # an outlier (a real pan moves it about 1 m per frame); it is skipped unless it persists for
     # ACCEPT_AFTER frames, which means the camera really cut.
     kp, Hs, H_s, rejected, streak = YOLO(kp_weights), [], None, 0, 0
+    max_jump = MAX_JUMP_M * max(1.0, 25 / fps)  # a clip with skipped frames pans further per frame
     probe = None
     for frame in bv.frames(video):
         if probe is None:  # 3 x 3 image points over the lower 60 % of the frame, where the pitch is
@@ -82,10 +93,10 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
         if fit is not None:
             H = fit[0] / fit[0][2, 2]
             jump = 0.0 if H_s is None else float(np.median(np.linalg.norm(bp.project(H, probe) - bp.project(H_s, probe), axis=1)))
-            if jump > MAX_JUMP_M and streak < ACCEPT_AFTER:
+            if jump > max_jump and streak < ACCEPT_AFTER:
                 rejected, streak = rejected + 1, streak + 1
             else:
-                H_s = H if (H_s is None or jump > MAX_JUMP_M) else EMA * H + (1 - EMA) * H_s
+                H_s = H if (H_s is None or jump > max_jump) else EMA * H + (1 - EMA) * H_s
                 streak = 0
         Hs.append(H_s)
     keeper_x, depth = [], collections.defaultdict(list)
@@ -113,20 +124,20 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
     writer.send(None)
     state, ball_hist = hud.PitchState(fps), collections.deque(maxlen=8)
     line_steps, prev_line = [], None
+    shares, track_sum, track_n = [], collections.defaultdict(lambda: np.zeros(2)), collections.Counter()
     for f, (frame, d, H) in enumerate(zip(bv.frames(video), dets, Hs)):
         ids = [int(i) for i in d["id"]]
-        ball_k = [k for k, i in enumerate(ids) if role.get(i) == "ball"]
-        kb = max(ball_k, key=lambda k: d["conf"][k]) if ball_k else None
-        ball_img = None if kb is None else ((d["xyxy"][kb][0] + d["xyxy"][kb][2]) / 2, (d["xyxy"][kb][1] + d["xyxy"][kb][3]) / 2)
+        bb = ball_boxes[f]
+        ball_img = None if bb is None else ((bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2)
         ball_hist.append(ball_img)
         people = [k for k, i in enumerate(ids) if role.get(i) != "ball"]
         boxes, pids = d["xyxy"][people], [ids[k] for k in people]
         roles_now = {i: role[i] for i in pids}
-        ball_xy, current, spreads, line_x = None, None, {}, None
+        ball_xy, current, spreads, line_x, control = None, None, {}, None, None
         if H is not None:
             state.update(pids, bp.project(H, bp.foot_points(boxes)))
-            if kb is not None:
-                ball_xy = bp.project(H, [[ball_img[0], d["xyxy"][kb][3]]])[0]
+            if bb is not None:
+                ball_xy = bp.project(H, [[ball_img[0], bb[3]]])[0]
                 near = [(np.linalg.norm(state.pos[i] - ball_xy), teams.get(i)) for i in pids if roles_now[i] == "player" and i in teams]
                 if near and min(near)[0] <= POSSESSION_M:
                     current = min(near)[1]
@@ -135,6 +146,14 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
                 pts = np.array([state.pos[i] for i in pids if roles_now[i] == "player" and teams.get(i) == t])
                 if len(pts) >= 3:
                     spreads[t] = (float(np.ptp(pts[:, 0])), float(np.ptp(pts[:, 1])))
+            outfield = {i: state.pos[i] for i in pids if roles_now[i] == "player" and i in teams}
+            control = hud.control_map(outfield, teams, hud.visible_cells(H, frame.shape))
+            if (share := hud.space_share(control)) is not None:
+                shares.append(share)
+            for i, p in outfield.items():
+                if 0 <= p[0] <= bp.LENGTH and 0 <= p[1] <= bp.WIDTH:
+                    track_sum[i] += p
+                    track_n[i] += 1
             if goal is not None and defending is not None:
                 on = lambda i: -2 <= state.pos[i][0] <= bp.LENGTH + 2 and -2 <= state.pos[i][1] <= bp.WIDTH + 2  # noqa: E731
                 dx = [state.pos[i][0] for i in pids if on(i) and (roles_now[i] == "keeper" or teams.get(i) == defending and roles_now[i] == "player")]
@@ -144,7 +163,7 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
             line_steps.append(abs(line_x - prev_line))
         prev_line = line_x
         frame = hud.frame_overlay(frame, boxes, pids, roles_now, teams, ball_hist, line_x, H)
-        panel = hud.pitch_panel(state, roles_now, teams, ball_xy, line_x)
+        panel = hud.pitch_panel(state, roles_now, teams, ball_xy, line_x, control=control)
         bar = hud.hud_bar(f, state, current, spreads, line_x)
         canvas = hud.compose(frame, panel, bar)
         writer.send(np.ascontiguousarray(cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)))
@@ -152,11 +171,26 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
             progress(0.7 + 0.3 * f / max(len(dets), 1), f"Drawing frame {f} of {len(dets)}")
     writer.close()
 
+    formation, shape_depths = {}, {}
+    if goal is not None and defending is not None and len(dets) / fps >= SHAPE_MIN_CLIP_S:
+        for t in (0, 1):  # depth from the goal each team defends
+            own = goal if t == defending else bp.LENGTH - goal
+            ids = [i for i, n in track_n.most_common() if teams[i] == t and n >= SHAPE_MIN_S * fps][:10]
+            if len(ids) >= MIN_SHAPE_PLAYERS:
+                depths = sorted(round(float(abs(track_sum[i][0] / track_n[i] - own)), 1) for i in ids)
+                shape_depths[("A", "B")[t]] = depths
+                if shape := bp.team_shape(depths):
+                    formation[("A", "B")[t]] = shape
+
     total = sum(state.possession.values())
     stats = {"frames": len(dets), "fps": fps, "team_agreement": agreement, "rejected_calibrations": rejected,
              "calibrated_share": float(np.mean([H is not None for H in Hs])), "defending_goal_x": goal, "defending_team": defending,
              "possession_share": {("A", "B")[t]: state.possession[t] / total for t in (0, 1)} if total else None,
              "possession_frames": total,
              "top_distance_m": {f"#{i}": round(dd, 1) for i, dd in state.dist.most_common(5) if role.get(i) == "player"},
-             "median_line_step_m": float(np.median(line_steps)) if line_steps else None}
+             "median_line_step_m": float(np.median(line_steps)) if line_steps else None,
+             "ball_detected_share": float(np.mean([b is not None for b in best])),
+             "ball_filled_share": float(np.mean([b is not None for b in ball_boxes])),
+             "space_share": {"A": float(np.mean([s[0] for s in shares])), "B": float(np.mean([s[1] for s in shares]))} if shares else None,
+             "formation": formation or None, "shape_depths_m": shape_depths or None}
     return stats

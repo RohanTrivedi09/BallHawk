@@ -98,6 +98,57 @@ def track_stats(dets, fps, player_cls, ball_cls):
             "ball_track_continuity": ball_frames / len(dets)}
 
 
+def track_roles(dets, role_of_cls):
+    """One role per track: the majority class over its frames. role_of_cls: {class id: role name}."""
+    votes = collections.defaultdict(collections.Counter)
+    for d in dets:
+        for c, i in zip(d["cls"], d["id"]):
+            votes[int(i)][role_of_cls[int(c)]] += 1
+    return {i: v.most_common(1)[0][0] for i, v in votes.items()}
+
+
+def best_ball_boxes(dets, role):
+    """The most confident box of a ball track in each frame, or None."""
+    out = []
+    for d in dets:
+        k = [j for j, i in enumerate(d["id"]) if role.get(int(i)) == "ball"]
+        out.append(d["xyxy"][max(k, key=lambda j: d["conf"][j])] if k else None)
+    return out
+
+
+def fill_ball_track(boxes, max_gap, max_step):
+    """Bridge the frames where the detector loses the ball.
+
+    boxes: one ball box (xyxy) or None per frame. max_gap: longest run of missing frames to bridge.
+    max_step: px per frame the ball can plausibly move. First, a detection that jumps more than that
+    from its nearest detections on both sides is dropped as a false positive (a head, a boot, a
+    penalty spot). Then each gap of at most max_gap frames between two kept detections, whose jump
+    per frame is also plausible, is filled by linear interpolation. Returns (boxes, filled) where
+    filled marks the interpolated frames.
+    """
+    n = len(boxes)
+    kept = [None if b is None else np.asarray(b, np.float64) for b in boxes]
+    centre = lambda b: (b[:2] + b[2:]) / 2  # noqa: E731
+    det = [f for f in range(n) if kept[f] is not None]
+    drop = []
+    for j, f in enumerate(det):
+        ok = [np.linalg.norm(centre(kept[f]) - centre(kept[g])) <= max_step * abs(f - g)
+              for g in (det[j - 1] if j > 0 else None, det[j + 1] if j + 1 < len(det) else None) if g is not None]
+        if ok and not any(ok):
+            drop.append(f)
+    for f in drop:
+        kept[f] = None
+    filled = np.zeros(n, bool)
+    det = [f for f in range(n) if kept[f] is not None]
+    for a, b in zip(det, det[1:]):
+        if 0 < b - a - 1 <= max_gap and np.linalg.norm(centre(kept[b]) - centre(kept[a])) <= max_step * (b - a):
+            for f in range(a + 1, b):
+                w = (f - a) / (b - a)
+                kept[f] = (1 - w) * kept[a] + w * kept[b]
+                filled[f] = True
+    return kept, filled
+
+
 def grass_lab(frame):
     """This frame's pitch colour: median Lab of the green-ish pixels in its lower 60 %, where grass
     dominates. Masking against it, not a fixed green hue range, keeps green kits: on 240 labelled

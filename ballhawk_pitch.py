@@ -172,6 +172,23 @@ def defending_goal_x(keeper_x):
     return 0.0 if keeper_x < LENGTH / 2 else LENGTH
 
 
+def team_shape(depths, min_gap_m=3.0, max_lines=4):
+    """Visible team shape such as "4-4-2" from outfield players' distances to their own goal line.
+    Lines are separated at the largest gaps in depth: at most max_lines - 1 of them, each wider than
+    min_gap_m and than twice the median gap, so a team spread evenly up the pitch has no lines rather
+    than invented ones. Counts run from the defence forwards. None when no clear lines exist."""
+    d = np.sort(np.asarray(depths, np.float64))
+    if len(d) < 3:
+        return None
+    gaps = np.diff(d)
+    wide = max(min_gap_m, 2 * float(np.median(gaps)))
+    cuts = sorted(int(i) for i in np.argsort(-gaps)[:max_lines - 1] if gaps[i] > wide)
+    if not cuts:
+        return None
+    sizes = np.diff([0, *[c + 1 for c in cuts], len(d)])
+    return "-".join(map(str, sizes))
+
+
 def offside(defenders_x, attackers_x, goal_x, ball_x=None):
     """Law 11 along the pitch length. A player is in an offside position if in the opponents' half
     and nearer to the opponents' goal line than both the ball and the second-last opponent, so the
