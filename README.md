@@ -18,21 +18,23 @@ Full plan, decisions and every result: [`ballhawk-project-plan.md`](ballhawk-pro
 
 ## Layout
 - `ballhawk_common.py` — data build (video-grouped splits), training, test/val evaluation, FPS, metrics JSON
-- `ballhawk_video.py`, `ballhawk_pitch.py` — tracking and teams; pitch model, homography, Law 11 offside
-- `ballhawk_hud.py`, `ballhawk_tactical.py`, `render_tactical_v2.py` — broadcast-style tactical video
+- `ballhawk_video.py`, `ballhawk_pitch.py` — tracking, teams, ball-track gap filling; pitch model, homography, Law 11 offside, team shape
+- `ballhawk_hud.py`, `ballhawk_tactical.py`, `render_tactical_v2.py` — broadcast-style tactical video with space control
+- `roi_sahi.py`, `ball_gaps.py` — add-on studies without new training: ball-region slicing, gap-filling accuracy
 - `notebooks/` — experiments 02–14 (run on Colab via the `colab` CLI; `executed/` holds the run copies)
 - `kaggle/`, `modal_jobs/`, `lightning_jobs/` — seed replication and keypoint jobs on other GPU hosts
-- `demo/` — Gradio live demo (Frame and Clip tabs); `site/` — project website
+- `web/` — the website: Overview, Study, Tactical and Live demo pages (plain HTML, CSS and JS)
+- `demo/` — FastAPI server: serves `web/` and the demo API (frame, clip jobs, manual calibration)
 - `results/` — metrics, report figures and stats for every run
 
 ## Website and live demo
-One server runs both: the project website at `/` (with the demo embedded) and the Gradio demo at `/demo`.
+One server runs both. From the repository root:
 ```
-python3 site/build.py
-cd demo && uv run --python 3.12 --with ultralytics==8.4.163 --with opencv-python-headless --with scikit-learn \
-    --with "gradio>=5" --with imageio-ffmpeg --with lap python app.py
+python3 web/build.py        # refresh web/data/site-data.js after results change
+uv run --python 3.12 --with-requirements demo/requirements.txt python demo/app.py
 ```
-Then open http://127.0.0.1:7860.
+Then open http://127.0.0.1:7860 (API docs at `/api/docs`). Without the server, `web/` is a static site;
+only the demo page needs the API.
 
 ## Data and credits
 Player detection: `martinjolif/football-player-detection` (Roboflow football-players-detection, CC BY 4.0).

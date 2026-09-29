@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BallHawk Live Demo</title>
+<meta name="description" content="Upload a broadcast football frame or clip and get the tactical view: teams, a 2D pitch map, space control and the offside line.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2315201B'/%3E%3Cpath d='M8 0v24M16 0v24M0 8h24M0 16h24' stroke='%23F2F4F1' stroke-opacity='.3'/%3E%3Ccircle cx='12' cy='12' r='3.4' fill='%23F06B55'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="css/ballhawk.css">
+<script src="js/site.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar">
+  <a class="brand" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="currentColor"/><path d="M8 0v24M16 0v24M0 8h24M0 16h24" stroke="var(--paper)" stroke-opacity=".3"/><circle cx="12" cy="12" r="3.4" fill="#F06B55"/></svg>BallHawk</a>
+  <nav aria-label="Pages">
+    <a href="index.html">Overview</a>
+    <a href="study.html">Study</a>
+    <a href="tactical.html">Tactical</a>
+    <a href="demo.html" class="cta" aria-current="page">Live demo</a>
+  </nav>
+  <button class="theme-btn" type="button" aria-label="Change theme"></button>
+</header>
+
+<main id="main" class="wrap">
+  <header class="page-head compact">
+    <h1>Try it</h1>
+    <p class="muted">A frame takes a few seconds; a clip adds tracking, speeds, possession and space control at about a second per frame on a laptop CPU. Wide, high broadcast angles calibrate best. For anything else, calibrate by hand.</p>
+  </header>
+
+  <div class="banner" id="offline" hidden>
+    <strong>The demo needs the BallHawk server, which is not reachable from this page.</strong>
+    <p class="small">Everything on this site is static except this page. Run the server from the repository, then open this page from it:</p>
+    <code>uv run --python 3.12 --with-requirements demo/requirements.txt python demo/app.py
+# then open http://127.0.0.1:7860/demo.html</code>
+  </div>
+
+  <div class="app">
+    <form class="card panel" id="form" autocomplete="off">
+      <div class="seg" id="mode" role="group" aria-label="What to analyse" style="justify-self:start">
+        <button type="button" data-mode="frame" aria-pressed="true">Frame</button>
+        <button type="button" data-mode="clip" aria-pressed="false">Clip</button>
+      </div>
+
+      <div class="field">
+        <span class="label">Your footage</span>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="image/*">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+          <span><strong>Drop a file</strong> or click to choose</span>
+          <span class="small" id="drop-hint">JPG or PNG broadcast frame, up to 20 MB</span>
+          <span class="file" id="file-name" hidden></span>
+        </label>
+      </div>
+
+      <div class="field">
+        <span class="label">Or an example</span>
+        <div class="examples" id="examples"></div>
+      </div>
+
+      <div class="field" id="clip-opts" hidden>
+        <div class="range">
+          <div class="row"><label for="seconds">Seconds to process</label><output id="seconds-out" for="seconds">10 s</output></div>
+          <input type="range" id="seconds" min="3" max="30" step="1" value="10">
+        </div>
+        <div class="range">
+          <div class="row"><label for="stride">Use every Nth frame</label><output id="stride-out" for="stride">2</output></div>
+          <input type="range" id="stride" min="1" max="3" step="1" value="2">
+        </div>
+        <p class="hint" id="eta">About 2 to 4 minutes on a laptop CPU.</p>
+      </div>
+
+      <button class="btn primary" type="submit" id="run" disabled>Analyse</button>
+      <p class="hint" id="run-hint">Choose a file or an example.</p>
+    </form>
+
+    <section class="result" aria-live="polite" aria-label="Result">
+      <div class="stage view" id="view">
+        <div class="placeholder" id="ph">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.5"/></svg>
+          <span>The tactical view appears here: the broadcast with team shapes and the offside band, and a 2D pitch map with space control.</span>
+        </div>
+        <div class="placeholder" id="busy" hidden><div class="spinner" aria-hidden="true"></div><span id="busy-msg">Analysing the frame</span></div>
+        <img id="out-img" alt="Tactical view of the analysed frame" hidden>
+        <video id="out-video" controls playsinline hidden></video>
+        <div class="progress" id="progress" hidden>
+          <div class="bar-track"><i id="progress-bar"></i></div>
+          <div class="msg"><span id="progress-msg">Queued</span><span id="progress-pct">0 %</span></div>
+        </div>
+      </div>
+
+      <div class="banner" id="error" hidden role="alert"><strong id="error-msg"></strong></div>
+      <div class="tiles" id="tiles"></div>
+      <ul class="notes" id="notes"></ul>
+      <div class="actions" id="result-actions" hidden>
+        <a class="btn ghost" id="download" download>Download</a>
+        <button class="btn" type="button" id="open-calib" hidden>Calibrate by hand</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="block" id="calib" aria-labelledby="calib-h" hidden style="padding-top:24px">
+    <header>
+      <span class="chip">Manual calibration</span>
+      <h2 id="calib-h">Four clicks and the pitch lines up</h2>
+      <p class="muted">Click a point on the frame, then the same landmark on the pitch (or the other way round). Four pairs define the pitch; a fifth also measures how accurate the clicks are. Penalty-box corners and where box lines meet the goal line work best. Spread the points out and avoid three on one line.</p>
+    </header>
+    <div class="calib">
+      <div class="stage shot" id="shot">
+        <img id="shot-img" alt="The frame to calibrate; click a pitch landmark on it">
+        <svg id="shot-marks" aria-hidden="true"></svg>
+      </div>
+      <div class="card" style="gap:14px">
+        <div class="pitch-pick"><svg id="pitch" viewBox="-4 -4 113 76" role="group" aria-label="Pitch landmarks: choose the one that matches your click"></svg></div>
+        <p class="hint" id="calib-status">Click a landmark on the frame.</p>
+        <ol class="pairs" id="pairs"></ol>
+        <div class="actions">
+          <button class="btn primary" type="button" id="apply" disabled>Apply calibration</button>
+          <button class="btn ghost" type="button" id="clear">Clear</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="links"><a href="index.html">Overview</a><a href="study.html">Study</a><a href="tactical.html">Tactical</a><a href="demo.html">Live demo</a><a href="https://github.com/RohanTrivedi09/BallHawk">GitHub</a></div>
+    <p>An offside visualiser, not VAR: feet are the bottom of a bounding box, only visible players count, and automatic calibration is about 2.8 m off on average. Uploaded files are processed in memory or a temporary folder and deleted within two hours.</p>
+  </div>
+</footer>
+<script src="js/demo.js"></script>
+</body>
+</html>

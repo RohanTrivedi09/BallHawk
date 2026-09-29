@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BallHawk Study</title>
+<meta name="description" content="The BallHawk detection study: data, five interventions tested one variable at a time, their cost, and where the ball still goes missing.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2315201B'/%3E%3Cpath d='M8 0v24M16 0v24M0 8h24M0 16h24' stroke='%23F2F4F1' stroke-opacity='.3'/%3E%3Ccircle cx='12' cy='12' r='3.4' fill='%23F06B55'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="css/ballhawk.css">
+<script src="js/site.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar">
+  <a class="brand" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="currentColor"/><path d="M8 0v24M16 0v24M0 8h24M0 16h24" stroke="var(--paper)" stroke-opacity=".3"/><circle cx="12" cy="12" r="3.4" fill="#F06B55"/></svg>BallHawk</a>
+  <nav aria-label="Pages">
+    <a href="index.html">Overview</a>
+    <a href="study.html" aria-current="page">Study</a>
+    <a href="tactical.html">Tactical</a>
+    <a href="demo.html" class="cta">Live demo</a>
+  </nav>
+  <button class="theme-btn" type="button" aria-label="Change theme"></button>
+</header>
+
+<main id="main">
+  <header class="page-head wrap">
+    <span class="chip">Phases 0 and 1</span>
+    <h1>The detection study</h1>
+    <p class="lede muted">Every run is YOLO11s for 100 epochs with seed 0 and changes one thing against the baseline. Settings are chosen on the validation split and reported once on test.</p>
+  </header>
+
+  <section id="data" class="block wrap" aria-labelledby="data-h">
+    <header>
+      <span class="chip">Phase 0 · Data</span>
+      <h2 id="data-h">372 frames, re-split by match</h2>
+    </header>
+    <div class="grid-2">
+      <p class="col">The frames come from wide tactical-camera footage of Bundesliga matches, annotated with four classes. Every image is native 1920×1080, so higher-resolution training has real detail to recover.</p>
+      <p class="col">The published split shared clips between train and test: all 19 test clips also appeared in training, which inflates test scores. Every source video now sits in exactly one split, and no frame is shared.</p>
+    </div>
+    <div class="grid-3">
+      <div class="card stat reveal"><span class="eyebrow">Split by video</span><span class="big">226 <small>/ 74 / 72</small></span><span class="small muted">Train / val / test images from 10 / 2 / 3 videos</span></div>
+      <div class="card stat reveal"><span class="eyebrow">Balls in test</span><span class="big">58</span><span class="small muted">Few enough that noise has to be measured</span></div>
+      <div class="card stat ball reveal"><span class="eyebrow">Ball to players</span><span class="big">1 : 20</span><span class="small muted">A ball in 87 % of frames, but one to about twenty players</span></div>
+    </div>
+    <div class="card reveal">
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Class</th><th>Instances</th><th>Median width at 640</th><th>10th–90th percentile</th><th>Frames containing it</th></tr></thead>
+          <tbody>
+            <tr><td>player</td><td>7,428</td><td>8.0 px</td><td>5.3 – 12.7 px</td><td>372 / 372</td></tr>
+            <tr><td>referee</td><td>863</td><td>7.0 px</td><td>4.9 – 14.7 px</td><td>371 / 372</td></tr>
+            <tr class="is-ball"><td>ball</td><td>327</td><td>3.7 px</td><td>2.8 – 4.9 px</td><td>325 / 372</td></tr>
+            <tr><td>goalkeeper</td><td>288</td><td>7.7 px</td><td>6.0 – 10.3 px</td><td>271 / 372</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="study" class="block wrap" aria-labelledby="study-h">
+    <header>
+      <span class="chip">Phase 1 · Interventions</span>
+      <h2 id="study-h">What moves ball detection</h2>
+      <p class="muted">The baseline and the two smallest effects were repeated with three seeds to measure the noise any gain has to beat.</p>
+    </header>
+    <div class="card reveal">
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>Intervention</span>
+        <span><i style="background:var(--ref)"></i>Baseline or control</span>
+        <span><i style="background:var(--band)"></i>Baseline ± 1 sd over 3 seeds</span>
+      </div>
+      <div class="bars" id="bars" role="list" aria-label="Ball mAP50-95 on the test split for every run"></div>
+      <div class="axis" aria-hidden="true"><span></span><div class="ticks" id="ticks"></div><span></span></div>
+      <p class="caption">Ball mAP50-95 on the test split. Hover or focus a row for the validation score, all-class mAP and speed.</p>
+    </div>
+
+    <div class="grid-2">
+      <article class="card finding reveal">
+        <div class="top"><h3>Resolution</h3><span class="verdict v-yes">Works</span></div>
+        <p>Training at 960 and 1280 lifts ball mAP50-95 from 0.110 to 0.242 and 0.298, with validation agreeing (0.117 → 0.321 → 0.390). At 1280 the typical ball grows to about 7.4 px, close to one grid cell. The T4 ran out of memory at batch 16, so the 1280 run used batch 8, recorded as a second variable.</p>
+      </article>
+      <article class="card finding reveal">
+        <div class="top"><h3>Sliced inference</h3><span class="verdict v-mixed">Overlaps</span></div>
+        <p>Tiling each frame into 960 px slices lifts the 640 model from 0.113 to 0.188 at about a ninth of the speed. On the 1280 model it hurts on validation (0.381 → 0.366). Both fix the same shortage of pixels on the ball, so the gains do not stack.</p>
+      </article>
+      <article class="card finding reveal">
+        <div class="top"><h3>Scale jitter, class weights</h3><span class="verdict v-no">Not established</span></div>
+        <p>With one seed, narrowing scale jitter from 0.5 to 0.2 and up-weighting rare classes each looked like +0.02 on test. Repeated with three seeds, the gains shrink to about +0.007 on test and +0.008 and 0.000 on validation, against a seed-to-seed spread of 0.009 to 0.014. Adding motion blur on top of scale 0.2 gives nothing for the ball and lowers all-class mAP from 0.502 to 0.475.</p>
+      </article>
+      <article class="card finding reveal">
+        <div class="top"><h3>P2 head</h3><span class="verdict v-no">Explained</span></div>
+        <p>A stride-4 head scored worse (0.045). No YOLO11 P2 config ships with the library, so the head was built from the stock config and only 297 of 593 weight tensors carried over from pretraining. A control that re-initialises the same layers of the stock model scores 0.060: the loss comes from discarded pretraining, not the finer head.</p>
+      </article>
+    </div>
+
+    <div class="card reveal">
+      <h3>The cost of each fix</h3>
+      <div class="scatter-wrap"><svg id="scatter" viewBox="0 0 760 380" role="img" aria-label="Ball mAP50-95 against inference FPS for every run"></svg></div>
+      <p class="caption">Ball mAP50-95 on test against end-to-end inference speed, batch 1 on a Tesla T4, log scale. Up and to the right is better.</p>
+      <details class="more">
+        <summary>Show every number</summary>
+        <div class="tablewrap">
+          <table id="runs-table">
+            <thead><tr><th>Run</th><th>Change</th><th>Ball test</th><th>Ball val</th><th>Ball recall</th><th>All classes</th><th>FPS</th><th>Batch</th><th>Train min</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section id="roi" class="block wrap" aria-labelledby="roi-h" hidden>
+    <header>
+      <span class="chip">Add-on · No new training</span>
+      <h2 id="roi-h">Slice only where the ball might be</h2>
+      <p class="muted">Full SAHI re-runs the model on every tile of the frame, and most tiles hold no ball. Here the 640 model first scans the whole frame at a very low threshold; only the few most ball-like spots get a second, sharper look, and their ball boxes are merged with the full-frame ones. Crop size and the number of crops were chosen on validation (<span data-roi="crop_px">–</span> px crops, top <span data-roi="k">–</span> candidates) and reported once on test.</p>
+    </header>
+    <div class="grid-3">
+      <div class="card stat reveal"><span class="eyebrow">Full frame</span><span class="big" data-roi="baseline.ball">–</span><span class="small muted">1 pass · <span data-roi-ms="baseline">–</span> ms per frame</span></div>
+      <div class="card stat accent reveal"><span class="eyebrow">Ball-region slices</span><span class="big" data-roi="roi.ball">–</span><span class="small muted"><span data-roi="roi.passes">–</span> passes on average · <span data-roi-ms="roi">–</span> ms per frame</span></div>
+      <div class="card stat reveal"><span class="eyebrow">Full SAHI</span><span class="big" data-roi="sahi.ball">–</span><span class="small muted">7 passes · <span data-roi-ms="sahi">–</span> ms per frame</span></div>
+    </div>
+    <div class="grid-2">
+      <article class="card finding reveal">
+        <div class="top"><h3>Most of the gain, a third of the cost</h3><span class="verdict v-yes">Works</span></div>
+        <p>Ball-region slicing keeps <span data-roi-derived="share">–</span> of SAHI's gain over the full frame at <span data-roi-derived="cost">–</span> the full frame's time, against <span data-roi-derived="sahi_cost">–</span> for SAHI. It finds as many balls as SAHI (recall <span data-roi="roi.ball_recall">–</span> against <span data-roi="sahi.ball_recall">–</span>); what it gives up is how tightly and confidently they are boxed.</p>
+      </article>
+      <article class="card finding reveal">
+        <div class="top"><h3>Crop size matters</h3><span class="verdict v-mixed">Lesson</span></div>
+        <p>A 640 px crop shows the ball at native resolution, three times larger than any ball the 640 model saw in training. On validation it still helped, but on test it lowered ball mAP to <span data-roi="roi_grid.640/3.ball">–</span> while finding more balls: the model finds them but boxes them badly. 960 px crops, SAHI's slice size, halve the scale gap and win on validation.</p>
+      </article>
+    </div>
+    <p class="caption col">Ball mAP50-95 on the 72 test frames, all from the 640 baseline weights, all methods run on the same laptop CPU and scored by the same evaluator as the table above, so the times compare with each other but not with the T4 numbers.</p>
+  </section>
+
+  <section id="misses" class="block wrap" aria-labelledby="miss-h">
+    <header>
+      <span class="chip">Failure gallery</span>
+      <h2 id="miss-h">Where the ball goes missing</h2>
+      <p class="muted">Test-split balls the baseline misses at confidence 0.25, cropped at native resolution. Some are hidden by legs or crowded feet, some are blurred or sit on a painted line. Several are isolated balls in open grass, clearly visible at 1920 px and lost only when the frame is shrunk to 640.</p>
+    </header>
+    <figure class="card reveal">
+      <img src="img/gallery.jpg" alt="Sixteen 96-pixel crops of missed balls, each captioned with the likely cause, such as occluded by a player's leg or motion blur" loading="lazy" width="1200" height="1320">
+      <figcaption>Red box: the labelled ball. Captions were written after inspecting each crop.</figcaption>
+    </figure>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="links"><a href="index.html">Overview</a><a href="study.html">Study</a><a href="tactical.html">Tactical</a><a href="demo.html">Live demo</a><a href="https://github.com/RohanTrivedi09/BallHawk">GitHub</a></div>
+    <p>Player detection data: Hugging Face <span class="mono">martinjolif/football-player-detection</span>, from the Roboflow project football-players-detection, CC BY 4.0. Training, monitoring and evaluation run from notebooks 02 to 14 in the repository.</p>
+  </div>
+</footer>
+<script src="data/site-data.js"></script>
+<script src="js/study.js"></script>
+</body>
+</html>

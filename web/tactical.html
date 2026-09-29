@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BallHawk Tactical</title>
+<meta name="description" content="From detections to a tactical view: tracking and teams, pitch calibration, the Law 11 offside line, ball-track gap filling, space control and team shape.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2315201B'/%3E%3Cpath d='M8 0v24M16 0v24M0 8h24M0 16h24' stroke='%23F2F4F1' stroke-opacity='.3'/%3E%3Ccircle cx='12' cy='12' r='3.4' fill='%23F06B55'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="css/ballhawk.css">
+<script src="js/site.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar">
+  <a class="brand" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="currentColor"/><path d="M8 0v24M16 0v24M0 8h24M0 16h24" stroke="var(--paper)" stroke-opacity=".3"/><circle cx="12" cy="12" r="3.4" fill="#F06B55"/></svg>BallHawk</a>
+  <nav aria-label="Pages">
+    <a href="index.html">Overview</a>
+    <a href="study.html">Study</a>
+    <a href="tactical.html" aria-current="page">Tactical</a>
+    <a href="demo.html" class="cta">Live demo</a>
+  </nav>
+  <button class="theme-btn" type="button" aria-label="Change theme"></button>
+</header>
+
+<main id="main">
+  <header class="page-head wrap">
+    <span class="chip">Phases 2 to 5</span>
+    <h1>From boxes to a tactical view</h1>
+    <p class="lede muted">Tracks give identity, shirt colour gives teams, and a homography onto a 105 × 68 m pitch model turns pixels into metres: positions, speeds, possession and the offside line.</p>
+  </header>
+
+  <section id="tracking" class="block wrap" aria-labelledby="trk-h">
+    <header>
+      <span class="chip">Phase 2 · Tracking and teams</span>
+      <h2 id="trk-h">A better detector keeps the ball in view</h2>
+    </header>
+    <div class="grid-2" style="align-items:start">
+      <div class="stack">
+        <p>ByteTrack runs on each clip, and players are split into teams by clustering their shirt colour, with one vote per track across frames. Shirt colour is measured against each frame's own grass colour, after a fixed "green" mask turned out to erase lime-green kits.</p>
+        <div class="grid-2">
+          <div class="card stat reveal"><span class="eyebrow">Ball tracked, broadcast</span><span class="num">10 % → 25 %</span><span class="small muted">Frames with a live ball track, 640 vs 1280 detector, unseen 30 s Bundesliga clip</span></div>
+          <div class="card stat reveal"><span class="eyebrow">Team vote agreement</span><span class="num">97 %</span><span class="small muted">Frames that agree with their track's team</span></div>
+        </div>
+        <p class="small muted">On a phone clip filmed from the stands, tracks fragment heavily: 261 to 448 player IDs in 17 seconds, and camera-motion compensation (BoT-SORT) removes only 5 to 14 % of them. On broadcast footage the same pipeline creates 101 to 130 IDs in 30 seconds.</p>
+      </div>
+      <figure class="reveal">
+        <video src="media/tracking_teams.mp4" poster="img/tracking.jpg" muted loop playsinline controls preload="metadata"
+               aria-label="Broadcast clip with players ringed in two team colours and the ball's recent path drawn as a trail" width="1280" height="720"></video>
+        <figcaption>Tracking and team colours with the ball's last 30 positions as a fading trail; gaps are frames where the ball was not detected. Footage: DFL, Bundesliga Data Shootout.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="gaps" class="block wrap" aria-labelledby="gap-h" hidden>
+    <header>
+      <span class="chip">Add-on · Ball track gap filling</span>
+      <h2 id="gap-h">Bridging the frames the detector misses</h2>
+      <p class="muted" id="gap-lede">A ball does not vanish for a few frames; the detector does. Short gaps between two confident detections are filled along the path between them, and jumps no real ball could make are dropped.</p>
+    </header>
+    <div class="grid-3">
+      <div class="card stat reveal"><span class="eyebrow">Frames with a ball, detector</span><span class="big" data-gap="before">–</span><span class="small muted">Best ball detection per frame, 1280 detector</span></div>
+      <div class="card stat accent reveal"><span class="eyebrow">After gap filling</span><span class="big" data-gap="after">–</span><span class="small muted">Gaps up to <span data-gap="max_gap_s">–</span> s bridged</span></div>
+      <div class="card stat reveal"><span class="eyebrow">Held-out error</span><span class="big"><span data-gap="holdout_median_px">–</span> <small>PX</small></span><span class="small muted">Median distance between a hidden detection and its filled position, gaps of 1 to 12 frames at 1920 px</span></div>
+    </div>
+    <p class="caption col">The filled positions are accurate, but coverage barely moves: most of the time the ball is missing for much longer than half a second, lost in a crowd or simply too small, and no interpolation can bridge that honestly. The error is measured by hiding real detections, which only exist on stretches where the ball was being tracked; those are the easier stretches, so treat it as a best case. It is the detector, not the tracker, that limits ball coverage.</p>
+  </section>
+
+  <section id="calibration" class="block wrap" aria-labelledby="cal-h">
+    <header>
+      <span class="chip">Phases 3 and 4 · Pitch geometry</span>
+      <h2 id="cal-h">Offside is a calibration problem</h2>
+      <p class="muted">A homography maps each frame onto the pitch model, anchored on penalty-area geometry that the laws fix. Under Law 11 a player is offside when in the opponents' half and nearer the goal line than both the ball and the second-last defender, so the line sits at whichever of those two is nearer the goal line. This is a visualiser, not VAR: feet are the bottom of a bounding box, and only visible players count.</p>
+    </header>
+    <figure class="card reveal">
+      <img src="img/offside_tile.jpg" alt="Broadcast frame with two offside lines, and a top-down pitch map comparing reference and automatic player positions" loading="lazy" width="1400" height="429">
+      <figcaption>White: line from a homography fitted to labelled keypoints. Blue: line from automatic calibration. On the map, filled dots are reference positions and rings are automatic ones.</figcaption>
+    </figure>
+    <div class="grid-4">
+      <div class="card stat ball reveal"><span class="status">Measured</span><span class="num">1.17 m</span><span class="small muted">Median offside-line error, automatic calibration, 16 unseen broadcast frames (90th percentile 3.9 m)</span></div>
+      <div class="card stat reveal"><span class="status">Measured</span><span class="num">2.8 m</span><span class="small muted">Median reprojection error of automatic calibration on the keypoint test split</span></div>
+      <div class="card stat reveal"><span class="status">Measured</span><span class="num">≈ 10 cm / px</span><span class="small muted">Offside-line shift at the far touchline per pixel of click error</span></div>
+      <div class="card stat accent reveal"><span class="status">Measured</span><span class="num">0.39 m</span><span class="small muted">Median held-out error of manual calibration from four hand-labelled box corners</span></div>
+    </div>
+    <div class="grid-3">
+      <article class="card finding reveal">
+        <h3>By hand</h3>
+        <p class="small">Fitting on four clicked penalty-box corners leaves a median 3.7 px on the other labelled points. Each pixel of click error moves the line about 10 cm at the far touchline, so careful manual calibration still carries 35 to 40 cm of uncertainty. Offside is decided in centimetres, which is why real VAR uses calibrated multi-camera rigs.</p>
+      </article>
+      <article class="card finding reveal">
+        <h3>Keypoint model</h3>
+        <p class="small">A YOLO11s pose model finds 32 pitch landmarks and fits a homography with RANSAC. Four landmarks were defined wrongly in the reference layout the dataset is usually paired with; fixing that cut their residual from about 2 m to 0.2 m. At matched batch size, 1280 beats 960 (2.9 m vs 4.0 m on validation), but the 960 model at batch 16 reaches 2.7 m and stays in use.</p>
+      </article>
+      <article class="card finding reveal">
+        <h3>On video</h3>
+        <p class="small">On an unseen 30-second broadcast clip every one of 750 frames calibrates and the offside line moves a median 8.5 cm between frames. On a phone clip filmed low in the stands the median step is 2.1 m. The keypoint model works on the camera it was trained on; the demo's manual calibration covers the rest.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="video" class="theatre" aria-labelledby="vid-h">
+    <div class="wrap stack" style="gap:32px">
+      <header class="stack" style="max-width:820px">
+        <span class="chip">Phase 5 · Tactical view</span>
+        <h2 id="vid-h">The broadcast, read as a pitch</h2>
+        <p class="muted">Top: possession, each team's spread and the offside line. Left: team shapes, IDs (goalkeepers magenta, referees yellow), the ball's direction and the offside band. Right: a live 2D map with speeds and distance covered. Positions are smoothed per player; calibration jumps no camera could make are rejected.</p>
+      </header>
+      <figure class="reveal">
+        <video src="media/tactical_v2.mp4" poster="img/tactical_v2_poster.jpg" muted loop playsinline controls preload="metadata"
+               aria-label="30 seconds of broadcast footage with team shapes, player IDs, possession and spread readouts, the offside band, and a live 2D pitch map with speeds" width="1920" height="864"></video>
+        <figcaption>Unseen 30-second clip. Footage: DFL Deutsche Fußball Liga, Bundesliga Data Shootout (clip 121364_9).</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="shape" class="block wrap" aria-labelledby="shape-h" hidden>
+    <header>
+      <span class="chip">Add-on · Space and shape</span>
+      <h2 id="shape-h">Who owns the space, and in what shape</h2>
+      <p class="muted">Every point of the pitch belongs to the nearest player (a Voronoi split), which gives each team's share of the visible space. Averaging each outfield player's position over the clip and grouping by depth gives the team's visible shape.</p>
+    </header>
+    <div class="grid-3">
+      <div class="card stat reveal"><span class="eyebrow">Space share, team A</span><span class="big" data-shape="space_share.A">–</span><span class="small muted">Mean over calibrated frames, visible pitch only</span></div>
+      <div class="card stat reveal"><span class="eyebrow">Space share, team B</span><span class="big" data-shape="space_share.B">–</span><span class="small muted">Mean over calibrated frames, visible pitch only</span></div>
+      <div class="card stat accent reveal"><span class="eyebrow">Visible shape</span><span class="big nowrap"><span data-shape="formation.A">–</span> · <span data-shape="formation.B">–</span></span><span class="small muted">Team A · team B, outfield players seen long enough to average</span></div>
+    </div>
+    <div class="card reveal">
+      <h3>Where the shapes come from</h3>
+      <div id="strips" class="stack" style="gap:10px"></div>
+      <p class="caption">Each dot is one outfield player's mean distance from the goal their team defends over the 30 seconds (the ten longest-tracked players per team). Lines are split only at gaps clearly wider than the usual spacing. The camera shows part of the pitch and calibration is about 2.8 m off, so a lone deep player can read as a line of one: a visible shape, not a formation.</p>
+    </div>
+  </section>
+
+  <section id="limits" class="block wrap" aria-labelledby="lim-h">
+    <header>
+      <span class="chip">Limits</span>
+      <h2 id="lim-h">What this does not show</h2>
+    </header>
+    <div class="card reveal">
+      <ul class="list">
+        <li>Training has 226 images. Three-seed repeats put seed-to-seed noise at about 0.01 mAP, so only the resolution effect is clearly real; smaller effects would need more data or many more seeds.</li>
+        <li>The 1280 run used batch 8, so its gain mixes resolution with a smaller batch.</li>
+        <li>Track fragmentation is measured without identity labels, so true ID switches are not counted.</li>
+        <li>Working out which team is defending from single frames is unreliable, so offside calls on stills are not reported as decisions.</li>
+        <li>Foot position is the bottom of a box. Real offside is judged on the foremost body part with calibrated multi-camera rigs.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="links"><a href="index.html">Overview</a><a href="study.html">Study</a><a href="tactical.html">Tactical</a><a href="demo.html">Live demo</a><a href="https://github.com/RohanTrivedi09/BallHawk">GitHub</a></div>
+    <p>Pitch keypoints: Hugging Face <span class="mono">martinjolif/football-pitch-detection</span>, CC BY 4.0. Broadcast clips: DFL Deutsche Fußball Liga, Bundesliga Data Shootout. Phone clip: Wikimedia Commons, CC BY-SA 4.0.</p>
+  </div>
+</footer>
+<script src="data/site-data.js"></script>
+<script>
+// Add-on panels stay hidden until their results exist (web/build.py reads them from results/).
+(() => {
+  const D = window.BALLHAWK, get = (o, path) => path.split(".").reduce((a, k) => a?.[k], o);
+  const show = (id, data, attr, fmt) => {
+    if (!data) return;
+    document.getElementById(id).hidden = false;
+    document.querySelectorAll(`[data-${attr}]`).forEach((e) => { const k = e.dataset[attr], v = get(data, k); if (v != null) e.textContent = fmt(v, k); });
+  };
+  const pct = (v) => (typeof v === "number" ? Math.round(100 * v) + " %" : v);
+  const SHARES = new Set(["before", "after"]);
+  show("gaps", D.ball_gaps, "gap", (v, k) => (SHARES.has(k) ? pct(v) : typeof v === "number" ? v.toFixed(1) : v));
+  show("shape", D.shape?.space_share ? D.shape : null, "shape", (v, k) => (k.startsWith("space_share") ? pct(v) : v));
+
+  // Depth strips: one row per team, dots at mean depth, ticks where the shape splits into lines.
+  const depths = D.shape?.shape_depths_m, box = document.getElementById("strips");
+  if (depths && box) {
+    const NS = "http://www.w3.org/2000/svg", W = 720, X0 = 70, X1 = 640, MAXD = 80, x = (d) => X0 + (X1 - X0) * Math.min(d, MAXD) / MAXD;
+    const mk = (svg, tag, a, text) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (text != null) e.textContent = text; svg.appendChild(e); return e; };
+    const COL = { A: "#2a78d6", B: "#46be50" };
+    for (const t of ["A", "B"]) {
+      const d = depths[t];
+      if (!d) continue;
+      const svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("viewBox", `0 0 ${W} 44`);
+      svg.setAttribute("role", "img");
+      const shape = D.shape.formation?.[t];
+      svg.setAttribute("aria-label", `Team ${t}: mean depths ${d.join(", ")} m${shape ? `, shape ${shape}` : ", no clear lines"}`);
+      mk(svg, "line", { x1: X0, x2: X1, y1: 22, y2: 22, stroke: "var(--rule)", "stroke-width": 2 });
+      mk(svg, "text", { x: 0, y: 26, fill: "var(--ink)", "font-family": "var(--mono)", "font-size": 13 }, `Team ${t}`);
+      if (shape) {  // split positions from the line sizes
+        let n = 0;
+        shape.split("-").map(Number).slice(0, -1).forEach((c) => { n += c; const xm = (x(d[n - 1]) + x(d[n])) / 2; mk(svg, "line", { x1: xm, x2: xm, y1: 6, y2: 38, stroke: "var(--muted)", "stroke-dasharray": "3 3" }); });
+      }
+      d.forEach((v) => mk(svg, "circle", { cx: x(v), cy: 22, r: 7, fill: COL[t], stroke: "var(--raised)", "stroke-width": 2 }));
+      mk(svg, "text", { x: X1 + 8, y: 26, fill: "var(--muted)", "font-family": "var(--mono)", "font-size": 12 }, shape || "–");
+      box.appendChild(svg);
+    }
+    const axis = document.createElementNS(NS, "svg");
+    axis.setAttribute("viewBox", `0 0 ${W} 20`); axis.setAttribute("aria-hidden", "true");
+    [0, 20, 40, 60, 80].forEach((m) => mk(axis, "text", { x: x(m), y: 14, "text-anchor": "middle", fill: "var(--muted)", "font-family": "var(--mono)", "font-size": 12 }, m === 0 ? "own goal line" : `${m} m`));
+    box.appendChild(axis);
+  }
+})();
+</script>
+</body>
+</html>

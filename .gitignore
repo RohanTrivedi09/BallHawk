@@ -15,7 +15,5 @@ results/kaggle_*/**/code/
 results/kaggle_*/**/runs/
 results/kaggle_*/*.log
 
-# Built artefacts (python3 site/build.py regenerates it)
-site/index.html
-site/index_web.html
+# Generated working copies
 kaggle/*/run.py
