@@ -1,0 +1,28 @@
+{
+  "clip": "DFL Deutsche Fussball Liga, Bundesliga Data Shootout clip 121364_9 (via HF dbal0503/Bundesliga).",
+  "frames": 750,
+  "fps": 25.0,
+  "frame_width": 1920.0,
+  "before": 0.25466666666666665,
+  "after": 0.276,
+  "max_gap_s": 0.5,
+  "dropped_jumps": 0,
+  "holdout_n": 7327,
+  "holdout_median_px": 0.9682170803045406,
+  "holdout_p90_px": 4.011863470644,
+  "holdout_by_gap": {
+    "1": 0.31367628742362136,
+    "2": 0.48235492694161586,
+    "3": 0.6144859157023165,
+    "4": 0.7471840451238372,
+    "5": 0.8279525492427857,
+    "6": 0.9686945941650795,
+    "7": 1.022188333048966,
+    "8": 1.12703168099197,
+    "9": 1.2340679373582253,
+    "10": 1.2945518611592446,
+    "11": 1.3705565724154058,
+    "12": 1.4593765996325387
+  },
+  "holdout_note": "Median px (frame 1920 px wide) between a hidden detection and its filled position, over 7327 hidden boxes in gaps of 1 to 12 frames"
+}
