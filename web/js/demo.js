@@ -162,6 +162,7 @@
         s.frames / s.fps < 8 ? "Needs a clip of 8 s or more" : "Team A · team B, from mean positions"],
     ]);
     const n = [];
+    if (s.shots > 1) n.push({ text: `Found ${s.shots - 1} camera cut${s.shots > 2 ? "s" : ""} (at ${s.cut_times_s.map((t) => `${t.toFixed(1)} s`).join(", ")}); tracking and calibration restart at each new shot.` });
     if (s.rejected_calibrations > 0.2 * s.frames) n.push({ text: "Many calibration jumps were rejected: this camera angle is far from the broadcast view the keypoint model was trained on.", warn: true });
     if (s.median_line_step_m != null) n.push({ text: `The offside line moved a median ${Math.round(100 * s.median_line_step_m)} cm between frames.` });
     const top = Object.entries(s.top_distance_m || {});

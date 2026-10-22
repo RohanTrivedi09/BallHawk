@@ -64,21 +64,51 @@ def video_fps(video):
     return fps
 
 
-def track(weights, video, tracker="bytetrack.yaml", conf=0.1, imgsz=640):
+# Bhattacharyya distance between consecutive frames' colour histograms that marks a new shot. On the DFL
+# clip, continuous play with pans peaks at 0.069 over 750 frames; a jump cut within the same camera
+# measures 0.217, a cut to another moment of the match 0.27-0.33, to another stadium 0.76-0.79.
+CUT_DISTANCE = 0.15
+SHOT_ID_STRIDE = 10000  # track IDs of shot k are offset by k * SHOT_ID_STRIDE
+
+
+def shot_cuts(video, threshold=CUT_DISTANCE):
+    """Frames where a new camera shot starts (a broadcast cut or a replay), excluding frame 0.
+
+    Each frame's hue-saturation histogram (on a quarter-size copy) is compared with the previous
+    frame's; a pan or zoom changes it a little, a cut to another camera changes it a lot. Fades
+    spread the change over several frames and are not detected."""
+    cuts, prev = [], None
+    for f, frame in enumerate(frames(video)):
+        small = cv2.resize(frame, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
+        hist = cv2.normalize(cv2.calcHist([hsv], [0, 1], None, [30, 32], [0, 180, 0, 256]), None).flatten()
+        if prev is not None and cv2.compareHist(prev, hist, cv2.HISTCMP_BHATTACHARYYA) > threshold:
+            cuts.append(f)
+        prev = hist
+    return cuts
+
+
+def track(weights, video, tracker="bytetrack.yaml", conf=0.1, imgsz=640, cuts=()):
     """Run the tracker (always named explicitly) and return one dict per frame:
     xyxy [N,4], cls [N], conf [N], id [N]. Tracking mode only returns tracked boxes.
 
     conf=0.1 lets low-score boxes reach ByteTrack's second association stage.
+    cuts: frames where a new shot starts. The tracker restarts there, so no track carries a player
+    across a cut; restarting also resets its ID counter, so each shot's IDs are offset by
+    SHOT_ID_STRIDE to stay unique over the clip.
     """
     model = YOLO(weights)
-    out = []
-    for r in model.track(source=str(video), tracker=tracker, persist=True, stream=True,
-                         conf=conf, imgsz=imgsz, verbose=False):
+    cuts, out, shot = set(cuts), [], 0
+    for f, r in enumerate(model.track(source=str(video), tracker=tracker, persist=True, stream=True,
+                                      conf=conf, imgsz=imgsz, verbose=False)):
         b = r.boxes
         ids = b.id.int().cpu().numpy() if b.id is not None else np.zeros(0, int)
         n = len(ids)
         out.append({"xyxy": b.xyxy.cpu().numpy()[:n], "cls": b.cls.int().cpu().numpy()[:n],
-                    "conf": b.conf.cpu().numpy()[:n], "id": ids})
+                    "conf": b.conf.cpu().numpy()[:n], "id": ids + shot * SHOT_ID_STRIDE})
+        if f + 1 in cuts:  # the stream reads the next frame only when asked, so this lands before it
+            model.predictor.trackers[0].reset()
+            shot += 1
     return out
 
 

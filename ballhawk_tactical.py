@@ -4,6 +4,7 @@ Used by render_tactical_v2.py (full clips) and the demo's Clip tab (trimmed clip
 """
 
 import collections
+import json
 import pathlib
 
 import cv2
@@ -57,16 +58,20 @@ def trim(video, out_mp4, max_seconds=None, stride=1):
     return str(out_mp4), fps / stride
 
 
-def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": None):
-    """Render the tactical video for `video` into `out_mp4` (H.264, 1920x864). Returns a stats dict."""
+def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": None, replay_json=None):
+    """Render the tactical video for `video` into `out_mp4` (H.264, 1920x864). Returns a stats dict.
+    Camera cuts split the clip into shots: tracks, calibration smoothing and the ball track restart at each.
+    replay_json: optional path for the per-frame pitch positions the website's interactive replay draws."""
     fps = bv.video_fps(video)
     names = [YOLO(det).names[i] for i in range(len(YOLO(det).names))]
     PLAYER, KEEPER, REF, BALL = (names.index(n) for n in ("player", "goalkeeper", "referee", "ball"))
     ROLE = {PLAYER: "player", KEEPER: "keeper", REF: "referee", BALL: "ball"}
 
-    # Pass 1: tracks and teams.
+    # Pass 1: shots, tracks and teams.
+    progress(0.03, "Finding camera cuts")
+    cuts = bv.shot_cuts(video)
     progress(0.05, "Tracking players and the ball")
-    dets = bv.track(str(det), video, tracker="bytetrack.yaml", imgsz=1280)
+    dets = bv.track(str(det), video, tracker="bytetrack.yaml", imgsz=1280, cuts=cuts)
     teams, agreement = bv.assign_teams(video, dets, PLAYER)
     role = bv.track_roles(dets, ROLE)
     # The ball: best ball box per frame, false jumps dropped and gaps up to BALL_GAP_S bridged.
@@ -74,8 +79,10 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
     cap = cv2.VideoCapture(str(video))
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     cap.release()
-    ball_boxes, ball_filled = bv.fill_ball_track(best, max_gap=int(round(BALL_GAP_S * fps)),
-                                                 max_step=BALL_STEP * width * 25 / fps)
+    ball_boxes = []  # filled shot by shot: a gap is never bridged across a cut
+    for a, b in zip([0, *cuts], [*cuts, len(best)]):
+        ball_boxes += bv.fill_ball_track(best[a:b], max_gap=int(round(BALL_GAP_S * fps)),
+                                         max_step=BALL_STEP * width * 25 / fps)[0]
 
     # Pass 2: smoothed homography per frame; defending side decided once per clip (as in notebook 13).
     progress(0.45, "Calibrating the pitch")
@@ -84,8 +91,10 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
     # ACCEPT_AFTER frames, which means the camera really cut.
     kp, Hs, H_s, rejected, streak = YOLO(kp_weights), [], None, 0, 0
     max_jump = MAX_JUMP_M * max(1.0, 25 / fps)  # a clip with skipped frames pans further per frame
-    probe = None
-    for frame in bv.frames(video):
+    probe, cut_set = None, set(cuts)
+    for f, frame in enumerate(bv.frames(video)):
+        if f in cut_set:  # a new shot: no smoothing or jump test against the previous camera
+            H_s, streak = None, 0
         if probe is None:  # 3 x 3 image points over the lower 60 % of the frame, where the pitch is
             h, w = frame.shape[:2]
             probe = [[x * w, y * h] for x in (0.2, 0.5, 0.8) for y in (0.5, 0.7, 0.9)]
@@ -125,7 +134,11 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
     state, ball_hist = hud.PitchState(fps), collections.deque(maxlen=8)
     line_steps, prev_line = [], None
     shares, track_sum, track_n = [], collections.defaultdict(lambda: np.zeros(2)), collections.Counter()
+    replay = []
     for f, (frame, d, H) in enumerate(zip(bv.frames(video), dets, Hs)):
+        if f in cut_set:
+            ball_hist.clear()
+            prev_line = None
         ids = [int(i) for i in d["id"]]
         bb = ball_boxes[f]
         ball_img = None if bb is None else ((bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2)
@@ -133,7 +146,7 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
         people = [k for k, i in enumerate(ids) if role.get(i) != "ball"]
         boxes, pids = d["xyxy"][people], [ids[k] for k in people]
         roles_now = {i: role[i] for i in pids}
-        ball_xy, current, spreads, line_x, control = None, None, {}, None, None
+        ball_xy, current, spreads, line_x, control, visible = None, None, {}, None, None, None
         if H is not None:
             state.update(pids, bp.project(H, bp.foot_points(boxes)))
             if bb is not None:
@@ -147,7 +160,8 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
                 if len(pts) >= 3:
                     spreads[t] = (float(np.ptp(pts[:, 0])), float(np.ptp(pts[:, 1])))
             outfield = {i: state.pos[i] for i in pids if roles_now[i] == "player" and i in teams}
-            control = hud.control_map(outfield, teams, hud.visible_cells(H, frame.shape))
+            visible = hud.visible_cells(H, frame.shape)
+            control = hud.control_map(outfield, teams, visible)
             if (share := hud.space_share(control)) is not None:
                 shares.append(share)
             for i, p in outfield.items():
@@ -162,6 +176,8 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
         if line_x is not None and prev_line is not None:
             line_steps.append(abs(line_x - prev_line))
         prev_line = line_x
+        if replay_json is not None:
+            replay.append(_replay_frame(state, pids, roles_now, teams, ball_xy, line_x, visible if H is not None else None))
         frame = hud.frame_overlay(frame, boxes, pids, roles_now, teams, ball_hist, line_x, H)
         panel = hud.pitch_panel(state, roles_now, teams, ball_xy, line_x, control=control)
         bar = hud.hud_bar(f, state, current, spreads, line_x)
@@ -182,8 +198,12 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
                 if shape := bp.team_shape(depths):
                     formation[("A", "B")[t]] = shape
 
+    if replay_json is not None:
+        pathlib.Path(replay_json).write_text(json.dumps({"fps": fps, "length": bp.LENGTH, "width": bp.WIDTH,
+                                                          "cuts": cuts, "frames": replay}, separators=(",", ":")))
+
     total = sum(state.possession.values())
-    stats = {"frames": len(dets), "fps": fps, "team_agreement": agreement, "rejected_calibrations": rejected,
+    stats = {"frames": len(dets), "fps": fps, "shots": len(cuts) + 1, "cut_times_s": [round(c / fps, 2) for c in cuts], "team_agreement": agreement, "rejected_calibrations": rejected,
              "calibrated_share": float(np.mean([H is not None for H in Hs])), "defending_goal_x": goal, "defending_team": defending,
              "possession_share": {("A", "B")[t]: state.possession[t] / total for t in (0, 1)} if total else None,
              "possession_frames": total,
@@ -194,3 +214,19 @@ def render_clip(video, out_mp4, det, kp_weights, progress=lambda frac, msg="": N
              "space_share": {"A": float(np.mean([s[0] for s in shares])), "B": float(np.mean([s[1] for s in shares]))} if shares else None,
              "formation": formation or None, "shape_depths_m": shape_depths or None}
     return stats
+
+
+KIND = {"keeper": 2, "referee": 3}  # replay kinds: 0 / 1 = team A / B, 2 keeper, 3 referee, 4 unassigned
+
+
+def _replay_frame(state, pids, roles, teams, ball_xy, line_x, visible):
+    """One frame of the interactive replay: smoothed positions on the pitch (0.1 m), the ball, the
+    offside line and the camera's footprint on the pitch (the hull of the visible 1 m cells)."""
+    people = [[int(i), KIND.get(roles[i], teams.get(i, 4)), round(float(state.pos[i][0]), 1), round(float(state.pos[i][1]), 1)]
+              for i in pids if i in state.pos and -3 <= state.pos[i][0] <= bp.LENGTH + 3 and -3 <= state.pos[i][1] <= bp.WIDTH + 3]
+    hull = None
+    if visible is not None and visible.any():
+        pts = hud.CELL_XY[visible].astype(np.float32)
+        hull = [[round(float(x), 1), round(float(y), 1)] for x, y in cv2.convexHull(pts).reshape(-1, 2)]
+    return {"p": people, "b": None if ball_xy is None else [round(float(ball_xy[0]), 1), round(float(ball_xy[1]), 1)],
+            "l": None if line_x is None else round(float(line_x), 2), "v": hull}
