@@ -27,7 +27,7 @@ if (ROOT / "ballhawk_pitch.py").exists():  # repository layout: shared modules l
 import anyio  # noqa: E402
 import cv2  # noqa: E402
 import numpy as np  # noqa: E402
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
 from fastapi.responses import FileResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from sklearn.cluster import KMeans  # noqa: E402
@@ -154,6 +154,25 @@ def analyse_frame(img, points=None):
 # ---------- clip jobs ----------
 
 JOBS, JOBS_LOCK, WORKER = {}, threading.Lock(), ThreadPoolExecutor(max_workers=1)
+
+# Limits for a public deployment on shared CPUs: one visitor cannot fill the queue or the frame worker.
+FRAMES_PER_MINUTE, MAX_WAITING_CLIPS = 30, 4
+_FRAME_TIMES, _RATE_LOCK = {}, threading.Lock()
+
+
+def _client(request):
+    """The visitor's address; behind a proxy (Hugging Face Spaces) the first X-Forwarded-For entry."""
+    fwd = request.headers.get("x-forwarded-for")
+    return fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "unknown")
+
+
+def _check_frame_rate(client):
+    now = time.time()
+    with _RATE_LOCK:
+        recent = [t for t in _FRAME_TIMES.get(client, []) if now - t < 60]
+        if len(recent) >= FRAMES_PER_MINUTE:
+            raise HTTPException(429, "Too many frames in the last minute. Wait a moment and try again.")
+        _FRAME_TIMES[client] = recent + [now]
 JOB_TTL_S = 2 * 3600
 
 
@@ -221,7 +240,9 @@ def pitch():
 
 
 @app.post("/api/frame")
-async def frame(file: UploadFile | None = File(None), example: str | None = Form(None), points: str | None = Form(None)):
+async def frame(request: Request, file: UploadFile | None = File(None), example: str | None = Form(None),
+                points: str | None = Form(None)):
+    _check_frame_rate(_client(request))
     if file is not None:
         data = await _read_capped(file, MAX_IMAGE_MB)
     elif example:
@@ -247,13 +268,20 @@ async def frame(file: UploadFile | None = File(None), example: str | None = Form
 
 
 @app.post("/api/clip")
-async def clip(file: UploadFile | None = File(None), example: str | None = Form(None),
+async def clip(request: Request, file: UploadFile | None = File(None), example: str | None = Form(None),
                seconds: float = Form(10), stride: int = Form(2)):
     if not 1 <= seconds <= MAX_SECONDS or stride not in (1, 2, 3):
         raise HTTPException(400, f"Seconds must be 1 to {MAX_SECONDS} and stride 1, 2 or 3.")
     if file is None and not example:
         raise HTTPException(400, "Upload a clip or pick the example.")
     _prune_jobs()
+    client = _client(request)
+    with JOBS_LOCK:
+        active = [j for j in JOBS.values() if j["state"] in ("queued", "running")]
+    if any(j["client"] == client for j in active):
+        raise HTTPException(429, "Your previous clip is still rendering. Wait for it to finish, then start the next one.")
+    if len(active) > MAX_WAITING_CLIPS:
+        raise HTTPException(429, "The clip queue is full. Try again in a few minutes, or analyse a single frame meanwhile.")
     job_id = uuid.uuid4().hex[:12]
     job_dir = pathlib.Path(tempfile.mkdtemp(prefix=f"ballhawk_{job_id}_"))
     try:
@@ -275,7 +303,7 @@ async def clip(file: UploadFile | None = File(None), example: str | None = Form(
         raise
     with JOBS_LOCK:
         busy = any(j["state"] in ("queued", "running") for j in JOBS.values())
-        JOBS[job_id] = {"state": "queued", "progress": 0.0, "created": time.time(), "dir": job_dir,
+        JOBS[job_id] = {"state": "queued", "progress": 0.0, "created": time.time(), "dir": job_dir, "client": client,
                         "message": "Waiting for the clip ahead to finish" if busy else "Starting",
                         "stats": None, "video": None}
     WORKER.submit(_run_clip, job_id, str(source), seconds, stride)
