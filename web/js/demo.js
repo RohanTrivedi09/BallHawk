@@ -20,6 +20,11 @@
     $("out-img").hidden = which !== "img"; $("out-video").hidden = which !== "video";
     $("progress").hidden = which !== "progress";
   }
+  function reveal() {
+    const r = $("result"), first = r.hidden;
+    r.hidden = false;
+    if (first) r.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
   function error(msg) { $("error").hidden = !msg; $("error-msg").textContent = msg || ""; }
   function tiles(list) {
     $("tiles").replaceChildren(...list.map(([label, value, sub]) => el("div", { className: "tile" },
@@ -44,6 +49,9 @@
     $("drop-hint").textContent = mode === "frame" ? "JPG or PNG broadcast frame, up to 20 MB" : "MP4, MOV or WebM clip, up to 200 MB; only the first seconds are used";
     $("clip-opts").hidden = mode !== "clip";
     $("run").textContent = mode === "frame" ? "Analyse frame" : "Render clip";
+    $("mode-hint").textContent = mode === "frame"
+      ? "One frame: teams, a pitch map, space control and the offside line."
+      : "A clip adds tracking, speeds, possession and team shape.";
     setSource(null);
     renderExamples();
   }
@@ -53,7 +61,8 @@
     if (src?.kind === "file") $("file-name").textContent = src.file.name;
     else $("file").value = "";
     document.querySelectorAll("#examples button").forEach((b) => b.setAttribute("aria-pressed", String(src?.kind === "example" && b.dataset.name === src.name)));
-    $("run-hint").textContent = src ? (src.kind === "file" ? "Ready." : `Example: ${src.name}`) : "Choose a file or an example.";
+    const chosen = document.querySelector("#examples button[aria-pressed='true'] .cap");
+    $("run-hint").textContent = src ? (src.kind === "file" ? `Ready: ${src.file.name}` : `Ready: ${chosen?.textContent ?? src.name}`) : "Choose a file or an example.";
     setBusy(S.busy);
   }
   function takeFile(file) {
@@ -64,14 +73,20 @@
     error(null);
     setSource({ kind: "file", file });
   }
+  // Example files are named <match>_<clip>_<frame>.jpg; the caption names the match and clip.
+  const caption = (x) => {
+    if (S.mode === "clip") return "Bundesliga clip, 10 s";
+    const [match, clip] = x.name.split("_");
+    return `Match ${match}, clip ${clip}`;
+  };
   function renderExamples() {
     const list = S.mode === "frame" ? EX.frames : EX.clips;
-    $("examples").replaceChildren(...list.map((x, k) => {
-      const media = el("img", { src: S.mode === "frame" ? x.url : "img/tactical_v2_poster.jpg", alt: "", loading: "lazy" });
-      const b = el("button", { type: "button", title: x.name }, media, el("span", { className: "tag", textContent: S.mode === "frame" ? `Frame ${k + 1}` : "DFL clip" }));
+    $("examples").classList.toggle("single", list.length === 1);
+    $("examples").replaceChildren(...list.map((x) => {
+      const img = el("img", { src: S.mode === "frame" ? x.url : "img/tactical_v2_poster.jpg", alt: "", loading: "lazy" });
+      const b = el("button", { type: "button", className: "ex" }, el("span", { className: "thumb" }, img), el("span", { className: "cap", textContent: caption(x) }));
       b.dataset.name = x.name;
       b.setAttribute("aria-pressed", "false");
-      b.setAttribute("aria-label", `Use example ${x.name}`);
       b.addEventListener("click", () => { error(null); setSource({ kind: "example", name: x.name, url: x.url }); });
       return b;
     }));
@@ -85,7 +100,7 @@
 
   // ---------- frame ----------
   async function runFrame(points) {
-    setBusy(true); error(null); show("busy");
+    setBusy(true); error(null); reveal(); show("busy");
     $("busy-msg").textContent = points ? "Applying your calibration" : "Detecting, calibrating and drawing";
     $("result-actions").hidden = true;
     try {
@@ -115,7 +130,7 @@
 
   // ---------- clip ----------
   async function runClip() {
-    setBusy(true); error(null); show("progress");
+    setBusy(true); error(null); reveal(); show("progress");
     $("busy-msg").textContent = "Rendering the tactical view, frame by frame";
     $("progress-bar").style.width = "0%"; $("progress-pct").textContent = "0 %"; $("progress-msg").textContent = "Uploading";
     $("result-actions").hidden = true; $("calib").hidden = true;
@@ -195,7 +210,7 @@
     const mark = (u, v, fill) => svg("circle", { cx: u, cy: v, r, fill, stroke: "#fff", "stroke-width": r / 4 });
     m.replaceChildren(...S.pairs.map(([u, v], n) => {
       const g = svg("g");
-      const t = svg("text", { x: u + r * 1.4, y: v - r * 1.2, fill: "#fff", "font-size": r * 2.4, "font-family": "IBM Plex Mono, monospace", stroke: "#0d1210", "stroke-width": r / 3, "paint-order": "stroke" });
+      const t = svg("text", { x: u + r * 1.4, y: v - r * 1.2, fill: "#fff", "font-size": r * 2.4, "font-family": "-apple-system, BlinkMacSystemFont, sans-serif", stroke: "#0d1210", "stroke-width": r / 3, "paint-order": "stroke" });
       t.textContent = n + 1;
       g.append(mark(u, v, "#1baf7a"), t);
       return g;
@@ -215,8 +230,8 @@
     }));
     const need = 4 - S.pairs.length;
     $("calib-status").textContent = S.pending.img ? "Now choose the matching landmark on the pitch."
-      : S.pending.k != null ? `Now click “${name(S.pending.k)}” on the frame.`
-      : need > 0 ? `${need} more pair${need > 1 ? "s" : ""} to go.` : "Ready. Add a fifth pair to measure click accuracy, or apply.";
+      : S.pending.k != null ? `Now select “${name(S.pending.k)}” on the frame.`
+      : need > 0 ? `${need} more pair${need > 1 ? "s" : ""} to go.` : "Ready. Add a fifth pair to measure how accurate your marks are, or apply.";
     setBusy(S.busy);
   }
   async function openCalib(scroll = true) {

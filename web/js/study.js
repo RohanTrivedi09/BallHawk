@@ -15,7 +15,7 @@
   ].filter((r) => RUNS[r[0]]);
   const fmt = (v, d = 3) => (v == null ? "n/a" : v.toFixed(d));
   const tipHtml = (r, m) => `<b>${r[1]}</b>${r[2]}<br>Ball test ${fmt(m.ball)} · val ${fmt(m.val_ball)}<br>All classes ${fmt(m.all)}<br>${fmt(m.fps, 1)} FPS · batch ${m.batch}`;
-  const colour = (r) => `var(${r[3] === "ref" ? "--ref" : "--accent"})`;
+  const colour = (r) => `var(${r[3] === "ref" ? "--ref" : "--chart"})`;
 
   // ---------- bar chart ----------
   const MAX = 0.32, base = RUNS.baseline_yolo11s_640.ball;

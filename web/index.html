@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2F4F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1714" media="(prefers-color-scheme: dark)">
 <title>BallHawk</title>
 <meta name="description" content="Why YOLO misses a 4-pixel football on broadcast footage, what fixes it, and how far that carries into tracking, pitch calibration and an offside visualiser.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2315201B'/%3E%3Cpath d='M8 0v24M16 0v24M0 8h24M0 16h24' stroke='%23F2F4F1' stroke-opacity='.3'/%3E%3Ccircle cx='12' cy='12' r='3.4' fill='%23F06B55'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&display=swap">
 <link rel="stylesheet" href="css/ballhawk.css">
 <script src="js/site.js"></script>
 </head>
@@ -27,12 +29,11 @@
 
 <main id="main">
   <section class="hero wrap">
-    <span class="chip">Computer Vision · Adani University</span>
     <h1>BallHawk<span class="dot">.</span></h1>
     <p class="lede">On a wide broadcast shot the football is <span class="mono">3.7&nbsp;px</span> across when YOLO sees it, smaller than one cell of its finest grid. This project measures how much that hurts, tests five fixes one at a time, and carries the winner into tracking, pitch calibration and an offside visualiser.</p>
     <div class="actions center">
-      <a class="btn primary" href="demo.html">Try it on your footage</a>
-      <a class="btn ghost" href="study.html">Read the study</a>
+      <a class="btn" href="demo.html">Try it on your footage</a>
+      <a class="btn tinted" href="study.html">Read the study</a>
     </div>
 
     <figure class="scope reveal">
@@ -82,7 +83,7 @@
                aria-label="30 seconds of broadcast footage with team shapes, player IDs, possession and spread readouts, the offside band, and a live 2D pitch map with speeds" width="1920" height="864"></video>
         <figcaption class="center">Footage: DFL Deutsche Fußball Liga, Bundesliga Data Shootout (clip 121364_9).</figcaption>
       </figure>
-      <div class="actions center"><a class="btn ghost" href="tactical.html">How the tactical view works</a></div>
+      <div class="actions center"><a class="btn tinted" href="tactical.html">How the tactical view works</a></div>
     </div>
   </section>
 
@@ -92,11 +93,11 @@
       <h2 id="pipe-h">Five phases, one question each</h2>
     </header>
     <div class="steps">
-      <a class="step reveal" href="study.html#data"><span class="n">PHASE 0</span><h3>Data</h3><p>372 frames re-split by match, so no clip leaks from train into test.</p></a>
-      <a class="step reveal" href="study.html#study"><span class="n">PHASE 1</span><h3>Detection</h3><p>Resolution, augmentation, a P2 head, class weights and SAHI, one variable at a time.</p></a>
-      <a class="step reveal" href="tactical.html#tracking"><span class="n">PHASE 2</span><h3>Tracking</h3><p>ByteTrack IDs and shirt-colour teams. The better detector doubles ball coverage.</p></a>
-      <a class="step reveal" href="tactical.html#calibration"><span class="n">PHASES 3–4</span><h3>Calibration</h3><p>Hand-clicked and learned pitch landmarks map every frame onto a 105 × 68 m pitch.</p></a>
-      <a class="step reveal" href="tactical.html#video"><span class="n">PHASE 5</span><h3>Tactical view</h3><p>Positions, speeds, possession and a per-frame offside line on video.</p></a>
+      <a class="step reveal" href="study.html#data"><span class="n">Phase 0</span><h3>Data</h3><p>372 frames re-split by match, so no clip leaks from train into test.</p></a>
+      <a class="step reveal" href="study.html#study"><span class="n">Phase 1</span><h3>Detection</h3><p>Resolution, augmentation, a P2 head, class weights and SAHI, one variable at a time.</p></a>
+      <a class="step reveal" href="tactical.html#tracking"><span class="n">Phase 2</span><h3>Tracking</h3><p>ByteTrack IDs and shirt-colour teams. The better detector doubles ball coverage.</p></a>
+      <a class="step reveal" href="tactical.html#calibration"><span class="n">Phases 3–4</span><h3>Calibration</h3><p>Hand-marked and learned pitch landmarks map every frame onto a 105 × 68 m pitch.</p></a>
+      <a class="step reveal" href="tactical.html#video"><span class="n">Phase 5</span><h3>Tactical view</h3><p>Positions, speeds, possession and a per-frame offside line on video.</p></a>
     </div>
   </section>
 
@@ -104,8 +105,8 @@
     <div class="card center-card reveal">
       <span class="chip">Live demo</span>
       <h2 id="try-h">Bring your own match</h2>
-      <p class="lede muted col">Upload a wide broadcast frame or a short clip. If the camera angle defeats automatic calibration, click four pitch landmarks and the offside line works anyway.</p>
-      <div class="actions center"><a class="btn primary" href="demo.html">Open the demo</a></div>
+      <p class="lede muted col">Upload a wide broadcast frame or a short clip. If the camera angle defeats automatic calibration, mark four pitch landmarks yourself and the offside line works anyway.</p>
+      <div class="actions center"><a class="btn" href="demo.html">Open the demo</a></div>
     </div>
   </section>
 </main>

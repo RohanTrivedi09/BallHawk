@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2F4F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1714" media="(prefers-color-scheme: dark)">
 <title>BallHawk Tactical</title>
 <meta name="description" content="From detections to a tactical view: tracking and teams, pitch calibration, the Law 11 offside line, ball-track gap filling, space control and team shape.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2315201B'/%3E%3Cpath d='M8 0v24M16 0v24M0 8h24M0 16h24' stroke='%23F2F4F1' stroke-opacity='.3'/%3E%3Ccircle cx='12' cy='12' r='3.4' fill='%23F06B55'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&display=swap">
 <link rel="stylesheet" href="css/ballhawk.css">
 <script src="js/site.js"></script>
 </head>
@@ -95,7 +97,7 @@
       </article>
       <article class="card finding reveal">
         <h3>On video</h3>
-        <p class="small">On an unseen 30-second broadcast clip every one of 750 frames calibrates and the offside line moves a median 8.5 cm between frames. On a phone clip filmed low in the stands the median step is 2.1 m. The keypoint model works on the camera it was trained on; the demo's manual calibration covers the rest.</p>
+        <p class="small">On an unseen 30-second broadcast clip every one of 750 frames calibrates and the offside line moves a median 5 cm between frames. On a phone clip filmed low in the stands the median step is 2.1 m. The keypoint model works on the camera it was trained on; the demo's manual calibration covers the rest.</p>
       </article>
     </div>
   </section>
@@ -186,18 +188,18 @@
       const shape = D.shape.formation?.[t];
       svg.setAttribute("aria-label", `Team ${t}: mean depths ${d.join(", ")} m${shape ? `, shape ${shape}` : ", no clear lines"}`);
       mk(svg, "line", { x1: X0, x2: X1, y1: 22, y2: 22, stroke: "var(--rule)", "stroke-width": 2 });
-      mk(svg, "text", { x: 0, y: 26, fill: "var(--ink)", "font-family": "var(--mono)", "font-size": 13 }, `Team ${t}`);
+      mk(svg, "text", { x: 0, y: 26, fill: "var(--ink)", "font-family": "var(--text)", "font-size": 13 }, `Team ${t}`);
       if (shape) {  // split positions from the line sizes
         let n = 0;
         shape.split("-").map(Number).slice(0, -1).forEach((c) => { n += c; const xm = (x(d[n - 1]) + x(d[n])) / 2; mk(svg, "line", { x1: xm, x2: xm, y1: 6, y2: 38, stroke: "var(--muted)", "stroke-dasharray": "3 3" }); });
       }
       d.forEach((v) => mk(svg, "circle", { cx: x(v), cy: 22, r: 7, fill: COL[t], stroke: "var(--raised)", "stroke-width": 2 }));
-      mk(svg, "text", { x: X1 + 8, y: 26, fill: "var(--muted)", "font-family": "var(--mono)", "font-size": 12 }, shape || "–");
+      mk(svg, "text", { x: X1 + 8, y: 26, fill: "var(--muted)", "font-family": "var(--text)", "font-size": 12 }, shape || "–");
       box.appendChild(svg);
     }
     const axis = document.createElementNS(NS, "svg");
     axis.setAttribute("viewBox", `0 0 ${W} 20`); axis.setAttribute("aria-hidden", "true");
-    [0, 20, 40, 60, 80].forEach((m) => mk(axis, "text", { x: x(m), y: 14, "text-anchor": "middle", fill: "var(--muted)", "font-family": "var(--mono)", "font-size": 12 }, m === 0 ? "own goal line" : `${m} m`));
+    [0, 20, 40, 60, 80].forEach((m) => mk(axis, "text", { x: x(m), y: 14, "text-anchor": "middle", fill: "var(--muted)", "font-family": "var(--text)", "font-size": 12 }, m === 0 ? "own goal line" : `${m} m`));
     box.appendChild(axis);
   }
 })();
