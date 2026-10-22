@@ -1,21 +1,29 @@
 ---
-title: BallHawk Tactical View
+title: BallHawk
 emoji: ⚽
 colorFrom: green
 colorTo: blue
-sdk: gradio
-app_file: app.py
+sdk: docker
+app_port: 7860
 pinned: false
 license: cc-by-4.0
+short_description: Find a 4-pixel football; tactical view and offside line
 ---
 
-# BallHawk: tactical view and offside visualiser
+# BallHawk
 
-Upload a wide broadcast football frame. The app detects players, referees, goalkeepers and the ball (YOLO11s trained at 1280 px),
-splits players into two teams by shirt colour, calibrates the frame onto a 105 × 68 m pitch from 32 detected pitch landmarks,
-and draws a top-down minimap with the Law 11 offside line.
+Why YOLO misses the football on wide broadcast footage, what fixes it, and how far that carries into
+tracking, pitch calibration and an offside visualiser. A Computer Vision project, Adani University.
 
-An offside visualiser, not VAR: feet are box bottoms, only visible players count, and automatic calibration is about 2.8 m off on average.
+This Space serves the project website and the live demo from one FastAPI app (`app.py`):
+- **Frame:** detections (YOLO11s trained at 1280 px), team colours, automatic pitch calibration from 32
+  detected landmarks (or manual calibration from four or more marked ones), a top-down map with space
+  control, and the Law 11 offside line.
+- **Clip:** the same plus tracking, speeds, distance covered, possession and visible team shape, rendered
+  in a background job.
 
-Part of BallHawk, a computer-vision course project on why YOLO misses the football on broadcast footage and what fixes it.
-Training data: football-players-detection and football-field-detection (Roboflow, CC BY 4.0). Example frames: DFL Deutsche Fußball Liga, Bundesliga Data Shootout.
+An offside visualiser, not VAR: feet are box bottoms, only visible players count, and automatic
+calibration is about 2.8 m off on average. Runs on CPU; a 10-second clip takes a few minutes.
+
+Built from the repository with `tools/make_space.sh`. Training data: football-players-detection and
+football-field-detection (Roboflow, CC BY 4.0). Example footage: DFL Deutsche Fußball Liga, Bundesliga Data Shootout.

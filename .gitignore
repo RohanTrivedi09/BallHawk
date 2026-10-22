@@ -17,3 +17,6 @@ results/kaggle_*/*.log
 
 # Generated working copies
 kaggle/*/run.py
+
+# Assembled deploy folder (tools/make_space.sh)
+build/
