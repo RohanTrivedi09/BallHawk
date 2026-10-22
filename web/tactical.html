@@ -117,6 +117,39 @@
     </div>
   </section>
 
+  <section id="replay" class="block wrap" aria-labelledby="rp-h" hidden>
+    <header>
+      <span class="chip">Interactive replay</span>
+      <h2 id="rp-h">Replay it on the pitch</h2>
+      <p class="muted">The same 30 seconds, drawn in your browser from the tracked positions. Scrub to any moment and switch layers on or off.</p>
+    </header>
+    <div class="card replay-card">
+      <div class="stage replay-stage"><canvas id="rp-canvas" role="img" aria-label="Top-down pitch with players, the ball and the selected layers"></canvas></div>
+      <div class="replay-bar">
+        <button class="round-btn" id="rp-play" type="button" aria-label="Play"></button>
+        <input type="range" id="rp-seek" min="0" max="0" value="0" aria-label="Position in the clip">
+        <span class="rp-time" id="rp-time">0:00 / 0:29</span>
+      </div>
+      <div class="replay-meta">
+        <div class="toggles" id="rp-layers" role="group" aria-label="Layers">
+          <button type="button" data-layer="offside">Offside line</button>
+          <button type="button" data-layer="space">Space control</button>
+          <button type="button" data-layer="shapes">Team shapes</button>
+          <button type="button" data-layer="camera">Camera view</button>
+        </div>
+        <p class="hint">Offside line <b id="rp-line">–</b> from the left goal line</p>
+      </div>
+      <div class="legend">
+        <span><i style="background:#2a78d6"></i>Team A</span>
+        <span><i style="background:#46be50"></i>Team B</span>
+        <span><i style="background:#dc3cc8"></i>Goalkeeper</span>
+        <span><i style="background:#ffc800"></i>Referee</span>
+        <span><i style="background:#fff;box-shadow:inset 0 0 0 2px #0d1210"></i>Ball</span>
+        <span><i style="background:#eb3c3c"></i>Offside line</span>
+      </div>
+    </div>
+  </section>
+
   <section id="shape" class="block wrap" aria-labelledby="shape-h" hidden>
     <header>
       <span class="chip">Add-on · Space and shape</span>
@@ -159,6 +192,7 @@
   </div>
 </footer>
 <script src="data/site-data.js"></script>
+<script src="js/replay.js"></script>
 <script>
 // Add-on panels stay hidden until their results exist (web/build.py reads them from results/).
 (() => {

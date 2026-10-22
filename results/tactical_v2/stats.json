@@ -2,6 +2,8 @@
   "clip": "DFL Deutsche Fussball Liga, Bundesliga Data Shootout clip 121364_9 (via HF dbal0503/Bundesliga).",
   "frames": 750,
   "fps": 25.0,
+  "shots": 1,
+  "cut_times_s": [],
   "team_agreement": 0.9704947603468659,
   "rejected_calibrations": 117,
   "calibrated_share": 1.0,
